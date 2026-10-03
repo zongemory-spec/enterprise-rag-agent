@@ -1,0 +1,63 @@
+{
+  "tools": [
+    "get_ticket_status",
+    "search_knowledge"
+  ],
+  "answer": "工单 T1001 的当前状态为 open。 [1]\n退款审批条件为：退款审批上限为 500 元。 [2]",
+  "model": "qwen3.8-max",
+  "chat_attempts": 4,
+  "embedding_attempts": 0,
+  "citations": 1,
+  "bob_ticket_denied": true,
+  "usage_records": [
+    {
+      "model": "qwen3.8-max",
+      "usage": {
+        "completion_tokens": 31,
+        "prompt_tokens": 447,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "text_tokens": 447
+        },
+        "total_tokens": 478
+      }
+    },
+    {
+      "model": "qwen3.8-max",
+      "usage": {
+        "completion_tokens": 27,
+        "prompt_tokens": 520,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "text_tokens": 520
+        },
+        "total_tokens": 547
+      }
+    },
+    {
+      "model": "qwen3.8-max",
+      "usage": {
+        "completion_tokens": 74,
+        "prompt_tokens": 876,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "text_tokens": 876
+        },
+        "total_tokens": 950
+      }
+    },
+    {
+      "model": "qwen3.8-max",
+      "usage": {
+        "completion_tokens": 53,
+        "prompt_tokens": 312,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "text_tokens": 312
+        },
+        "total_tokens": 365
+      }
+    }
+  ],
+  "scope": "One synthetic composite task; not a production-quality benchmark."
+}
