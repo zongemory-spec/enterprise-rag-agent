@@ -22,16 +22,20 @@ class Question(BaseModel):
 class AgentQuestion(Question):
     workflow_id:str | None=Field(default=None,min_length=1,max_length=64,pattern=r"^[A-Za-z0-9_-]+$")
 
-def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
+def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,synthesizer=None):
     from rag_app.settings import open_store
     store=store or open_store()
     auth=auth or Registry.from_file(os.getenv("RAG_AUTH_FILE","data/demo_auth.json"))
+    from rag_app.synthesis import ModelBudget,HTTPAnswerSynthesizer
+    budget=ModelBudget(int(os.getenv("RAG_CHAT_LIMIT","9")))
     if os.getenv("RAG_GENERATOR","extractive")=="real" and generator is None:
         from rag_app.generation import HTTPQuoteGenerator
         generator=HTTPQuoteGenerator(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"])
     if os.getenv("RAG_PLANNER","offline")=="real" and planner is None:
         from rag_app.planner import HTTPPlanner
-        planner=HTTPPlanner(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"])
+        planner=HTTPPlanner(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],budget)
+    if os.getenv("RAG_SYNTHESIS")=="real" and synthesizer is None:
+        synthesizer=HTTPAnswerSynthesizer(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],budget)
     if os.getenv("RAG_PG_DSN") and pg_index is None:
         from rag_app.pg_index import PGIndex
         embedder=None
@@ -94,6 +98,9 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
     @app.get("/health")
     def health():return {"status":"ok"}
 
+    @app.get("/capabilities")
+    def capabilities():return {"planner":"real" if planner else "offline-script","synthesis":getattr(synthesizer,"model","offline-extractive"),"chat_attempt_limit":budget.limit,"chat_attempts_used":budget.used,"tool_call_limit":3}
+
     @app.get("/",response_class=HTMLResponse)
     def ui():return Path(__file__).with_name("ui.html").read_text(encoding="utf-8-sig")
 
@@ -104,7 +111,7 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
     @app.post("/agent")
     def agent(body:AgentQuestion,ctx=Depends(authenticated)):
         from rag_app.workflow import execute
-        return execute(service,checkpoints,body.query,ctx,planner,body.method,body.workflow_id)
+        return execute(service,checkpoints,body.query,ctx,planner,body.method,body.workflow_id,synthesizer)
 
     @app.get("/citations/{chunk_id}")
     def citation(chunk_id:str,ctx=Depends(authenticated)):
