@@ -28,20 +28,24 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
     auth=auth or Registry.from_file(os.getenv("RAG_AUTH_FILE","data/demo_auth.json"))
     from rag_app.synthesis import ModelBudget,HTTPAnswerSynthesizer
     budget=ModelBudget(int(os.getenv("RAG_CHAT_LIMIT","9")))
+    from rag_app.request_budget import PersistentBudget
+    persistent_budget=PersistentBudget(os.environ['RAG_BUDGET_DB']) if os.getenv('RAG_BUDGET_DB') else None
+    chat_guard=persistent_budget or budget
     if os.getenv("RAG_GENERATOR","extractive")=="real" and generator is None:
         from rag_app.generation import HTTPQuoteGenerator
         generator=HTTPQuoteGenerator(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"])
     if os.getenv("RAG_PLANNER","offline")=="real" and planner is None:
         from rag_app.planner import HTTPPlanner
-        planner=HTTPPlanner(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],budget)
+        planner=HTTPPlanner(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],chat_guard)
     if os.getenv("RAG_SYNTHESIS")=="real" and synthesizer is None:
-        synthesizer=HTTPAnswerSynthesizer(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],budget)
+        synthesizer=HTTPAnswerSynthesizer(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],chat_guard)
     if os.getenv("RAG_PG_DSN") and pg_index is None:
         from rag_app.pg_index import PGIndex
         embedder=None
         if os.getenv("RAG_EMBEDDING","hash")=="real":
             from rag_app.embedding import HTTPEmbedding
-            embedder=HTTPEmbedding(os.environ["RAG_EMBED_URL"],os.environ["RAG_EMBED_KEY"],os.environ["RAG_EMBED_MODEL"],int(os.environ["RAG_EMBED_DIM"]))
+            if persistent_budget is None:raise RuntimeError('Real embeddings require RAG_BUDGET_DB.')
+            embedder=HTTPEmbedding(os.environ["RAG_EMBED_URL"],os.environ["RAG_EMBED_KEY"],os.environ["RAG_EMBED_MODEL"],int(os.environ["RAG_EMBED_DIM"]),persistent_budget)
         if getattr(store,"backend","sqlite")=="postgresql":
             from rag_app.pg_native_index import NativePGIndex
             pg_index=NativePGIndex(store,embedder)
@@ -99,7 +103,7 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
     def health():return {"status":"ok"}
 
     @app.get("/capabilities")
-    def capabilities():return {"planner":"real" if planner else "offline-script","synthesis":getattr(synthesizer,"model","offline-extractive"),"chat_attempt_limit":budget.limit,"chat_attempts_used":budget.used,"tool_call_limit":3}
+    def capabilities():return {"planner":"real" if planner else "offline-script","synthesis":getattr(synthesizer,"model","offline-extractive"),"chat_attempt_limit":budget.limit,"chat_attempts_used":budget.used,"tool_call_limit":3,'vector_index':pg_index.status() if hasattr(pg_index,'status') else None,'persistent_budget':persistent_budget.status() if persistent_budget else None}
 
     @app.get("/",response_class=HTMLResponse)
     def ui():return Path(__file__).with_name("ui.html").read_text(encoding="utf-8-sig")

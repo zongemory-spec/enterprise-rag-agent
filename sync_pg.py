@@ -7,12 +7,14 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--real",action="store_true",help="Enable billable semantic embedding requests")
     args=parser.parse_args()
-    configure_runtime(real=args.real)
+    configure_runtime(semantic=args.real)
     store=open_store()
     if store.backend!="postgresql":raise SystemExit("Configure PostgreSQL first")
     populate(store)
     embedding=None
     if args.real:
-        embedding=HTTPEmbedding(os.environ["RAG_EMBED_URL"],os.environ["RAG_EMBED_KEY"],os.environ["RAG_EMBED_MODEL"],int(os.environ["RAG_EMBED_DIM"]))
+        from rag_app.request_budget import PersistentBudget
+        embedding=HTTPEmbedding(os.environ["RAG_EMBED_URL"],os.environ["RAG_EMBED_KEY"],os.environ["RAG_EMBED_MODEL"],int(os.environ["RAG_EMBED_DIM"]),PersistentBudget(os.environ['RAG_BUDGET_DB']))
     index=NativePGIndex(store,embedding)
-    print({"indexed_chunks":index.sync(),"model":index.model_id})
+    if index.status()['ready']:print({'status':'already_ready','model':index.model_id})
+    else:print({"indexed_chunks":index.sync(),"model":index.model_id})

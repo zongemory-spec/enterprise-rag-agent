@@ -1,5 +1,6 @@
 """Opt-in compatible embedding endpoint. Never called by offline tests or default startup."""
 import math
+import hashlib
 import httpx
 
 class HTTPEmbedding:
@@ -7,7 +8,8 @@ class HTTPEmbedding:
         if not api_key or not model or dimensions<1:raise ValueError("Embedding configuration required")
         self.base_url,self.api_key,self.model=base_url,api_key,model
         self.dimensions=dimensions
-        self.model_id=f"http:{model}:{dimensions}"
+        endpoint_id=hashlib.sha256(base_url.rstrip('/').encode()).hexdigest()[:12]
+        self.model_id=f"http:{model}:{dimensions}:{endpoint_id}"
         self.before_request=before_request
         self.usage_records=[]
 

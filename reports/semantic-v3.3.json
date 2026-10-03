@@ -1,0 +1,155 @@
+{
+  "index": {
+    "model_id": "http:text-embedding-v4:1024:5891aed827c4",
+    "kind": "semantic",
+    "expected_chunks": 24,
+    "indexed_chunks": 24,
+    "ready": true,
+    "index_version": "24"
+  },
+  "budget": {
+    "embedding": {
+      "used": 8,
+      "limit": 12
+    },
+    "chat": {
+      "used": 4,
+      "limit": 4
+    }
+  },
+  "cases": [
+    {
+      "query": "买错了能退钱吗？",
+      "expected_document": "C001",
+      "keyword_documents": [],
+      "semantic_documents": [
+        "C001",
+        "C005",
+        "C003",
+        "S003"
+      ],
+      "keyword_hit": false,
+      "semantic_hit": true
+    },
+    {
+      "query": "出差花的钱怎样拿回来？",
+      "expected_document": "S001",
+      "keyword_documents": [],
+      "semantic_documents": [
+        "C001",
+        "S001",
+        "C005",
+        "C003"
+      ],
+      "keyword_hit": false,
+      "semantic_hit": true
+    },
+    {
+      "query": "新人报到要带些什么？",
+      "expected_document": "S002",
+      "keyword_documents": [],
+      "semantic_documents": [
+        "S002",
+        "S006",
+        "S003",
+        "S007"
+      ],
+      "keyword_hit": false,
+      "semantic_hit": true
+    },
+    {
+      "query": "上线之前哪些事项要确认？",
+      "expected_document": "E001",
+      "keyword_documents": [],
+      "semantic_documents": [
+        "S009",
+        "S003",
+        "S008",
+        "E004"
+      ],
+      "keyword_hit": false,
+      "semantic_hit": false
+    }
+  ],
+  "keyword_hit_at_4": 0.0,
+  "semantic_hit_at_4": 0.75,
+  "agent_answer": "工单T1001的当前状态为open（开启）。 [1]\n退款审批的条件为：退款审批上限为500元。 [2]",
+  "agent_tools": [
+    {
+      "tool": "get_ticket_status",
+      "status": "completed"
+    },
+    {
+      "tool": "search_knowledge",
+      "status": "completed"
+    }
+  ],
+  "bob_ticket_denied": true,
+  "embedding_usage": [
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 355,
+        "total_tokens": 355
+      },
+      "items": 10
+    },
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 305,
+        "total_tokens": 305
+      },
+      "items": 10
+    },
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 124,
+        "total_tokens": 124
+      },
+      "items": 4
+    },
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 8,
+        "total_tokens": 8
+      },
+      "items": 1
+    },
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 8,
+        "total_tokens": 8
+      },
+      "items": 1
+    },
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 8,
+        "total_tokens": 8
+      },
+      "items": 1
+    },
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 8,
+        "total_tokens": 8
+      },
+      "items": 1
+    },
+    {
+      "model": "text-embedding-v4",
+      "usage": {
+        "prompt_tokens": 4,
+        "total_tokens": 4
+      },
+      "items": 1
+    }
+  ],
+  "scope": "Four hand-written synthetic queries, not an independent benchmark; no general accuracy claim."
+}

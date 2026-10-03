@@ -16,7 +16,7 @@ class PGIntegration(unittest.TestCase):
         self.assertIn("C001",{r["document_id"] for r in index.retrieve(self.store,self.alice,"退款审批")})
         self.assertFalse(any(r["document_id"].startswith("E") for r in index.retrieve(self.store,self.alice,"发布窗口")))
         self.store.deactivate("C001")
-        self.assertEqual(index.retrieve(self.store,self.alice,"退款审批"),[])
+        with self.assertRaises(AccessError):index.retrieve(self.store,self.alice,"退款审批")
         index.sync()
         self.assertFalse(any(r["document_id"]=="C001" for r in index.retrieve(self.store,self.alice,"退款审批")))
     def test_history_revocation_and_tenant(self):

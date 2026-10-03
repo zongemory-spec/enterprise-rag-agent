@@ -2,13 +2,13 @@ import json,os
 from pathlib import Path
 from dotenv import dotenv_values
 ROOT=Path(__file__).resolve().parents[1]
-def configure_runtime(real=False):
+def configure_runtime(real=False,semantic=False):
     path=ROOT/"data/local_config.json"
     cfg=json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {}
     if cfg.get("postgres_config"):
         db=json.loads(Path(cfg["postgres_config"]).read_text(encoding="utf-8-sig"))
         os.environ.update(RAG_PG_DSN=db["dsn"],RAG_PG_SCHEMA=cfg.get("postgres_schema","rag_v2"),RAG_STORE="postgresql")
-    if real:
+    if real or semantic:
         source=os.getenv("RAG_PROVIDER_ENV_FILE") or cfg.get("provider_env_file")
         values=dotenv_values(source) if source else {}
         key=os.getenv("RAG_MODEL_KEY") or values.get("DASHSCOPE_API_KEY")
@@ -21,7 +21,11 @@ def configure_runtime(real=False):
         os.environ.setdefault("RAG_EMBED_MODEL","text-embedding-v4")
         os.environ.setdefault("RAG_EMBED_DIM","1024")
         # Real chat does not imply paid embeddings. Retrieval defaults to local methods.
-        os.environ.update(RAG_PLANNER="real",RAG_SYNTHESIS="real")
+        if real:os.environ.update(RAG_PLANNER="real",RAG_SYNTHESIS="real")
+    if semantic:
+        if os.getenv('RAG_STORE')!='postgresql':raise RuntimeError('Semantic mode requires PostgreSQL configuration.')
+        os.environ['RAG_EMBEDDING']='real'
+        os.environ.setdefault('RAG_BUDGET_DB',str(ROOT/'data/request_budget.sqlite3'))
     return cfg
 def open_store():
     if os.getenv("RAG_STORE")=="postgresql":
