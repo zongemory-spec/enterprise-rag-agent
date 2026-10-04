@@ -1,0 +1,213 @@
+{
+  "queries": [
+    {
+      "query": "退款审批条件是什么？",
+      "answer": "事实：退款审批上限为 500 元。 [1]\n事实：请假流程需要提前两天向直属主管申请。 [2]\n事实：客户回访应在结单后三天内完成。 [3]\n事实：工单升级须由值班主管确认。 [4]",
+      "retrieval_trace": {
+        "fusion": "rrf",
+        "rank_constant": 60,
+        "candidate_window": 12,
+        "keyword_candidates": [
+          "e7549018cc76d93b7a5b3cea"
+        ],
+        "vector_candidates": [
+          "e7549018cc76d93b7a5b3cea",
+          "99cbb46a30e941ec4102d83d",
+          "f74b546f74c81617bbbdfae3",
+          "f571bbd48f8ba302b62cd653",
+          "c99a0a55d2ed53caf77ac0d2",
+          "c0564bea913c9f4cdc9e3db2",
+          "d5419b70f9e2e22fc555af0e",
+          "bc2a0789dd0008e1bf324c64",
+          "df4be5720591f9b9066a465c",
+          "d589155cebc5ab3db30e360b",
+          "d2c870c8b1628d9a3f3212a9",
+          "3e2aacc697087958ebd29118"
+        ],
+        "selected": [
+          {
+            "chunk_id": "e7549018cc76d93b7a5b3cea",
+            "rrf_score": 0.03278688524590164,
+            "channel_ranks": {
+              "keyword": 1,
+              "vector": 1
+            }
+          },
+          {
+            "chunk_id": "99cbb46a30e941ec4102d83d",
+            "rrf_score": 0.016129032258064516,
+            "channel_ranks": {
+              "vector": 2
+            }
+          },
+          {
+            "chunk_id": "f74b546f74c81617bbbdfae3",
+            "rrf_score": 0.015873015873015872,
+            "channel_ranks": {
+              "vector": 3
+            }
+          },
+          {
+            "chunk_id": "f571bbd48f8ba302b62cd653",
+            "rrf_score": 0.015625,
+            "channel_ranks": {
+              "vector": 4
+            }
+          }
+        ]
+      },
+      "citations": [
+        {
+          "chunk_id": "e7549018cc76d93b7a5b3cea",
+          "document_id": "C001",
+          "version": 1,
+          "title": "退款审批",
+          "location": "lines 1-3",
+          "source": "synthetic/C001.md",
+          "quote": "事实：退款审批上限为 500 元。",
+          "url": "/citations/e7549018cc76d93b7a5b3cea"
+        },
+        {
+          "chunk_id": "99cbb46a30e941ec4102d83d",
+          "document_id": "S004",
+          "version": 1,
+          "title": "请假流程",
+          "location": "lines 1-3",
+          "source": "synthetic/S004.md",
+          "quote": "事实：请假流程需要提前两天向直属主管申请。",
+          "url": "/citations/99cbb46a30e941ec4102d83d"
+        },
+        {
+          "chunk_id": "f74b546f74c81617bbbdfae3",
+          "document_id": "C003",
+          "version": 1,
+          "title": "客户回访",
+          "location": "lines 1-3",
+          "source": "synthetic/C003.md",
+          "quote": "事实：客户回访应在结单后三天内完成。",
+          "url": "/citations/f74b546f74c81617bbbdfae3"
+        },
+        {
+          "chunk_id": "f571bbd48f8ba302b62cd653",
+          "document_id": "C002",
+          "version": 1,
+          "title": "工单升级",
+          "location": "lines 1-3",
+          "source": "synthetic/C002.md",
+          "quote": "事实：工单升级须由值班主管确认。",
+          "url": "/citations/f571bbd48f8ba302b62cd653"
+        }
+      ]
+    },
+    {
+      "query": "买错了能退钱吗？",
+      "answer": "事实：退款审批上限为 500 元。 [1]\n事实：补偿额度每单最多 80 元。 [2]\n事实：客户回访应在结单后三天内完成。 [3]\n事实：培训安排为每周三下午两点。 [4]",
+      "retrieval_trace": {
+        "fusion": "rrf",
+        "rank_constant": 60,
+        "candidate_window": 12,
+        "keyword_candidates": [],
+        "vector_candidates": [
+          "e7549018cc76d93b7a5b3cea",
+          "df4be5720591f9b9066a465c",
+          "f74b546f74c81617bbbdfae3",
+          "d2c870c8b1628d9a3f3212a9",
+          "f571bbd48f8ba302b62cd653",
+          "3e2aacc697087958ebd29118",
+          "d7f55bdf9c2a6512c345f343",
+          "c0564bea913c9f4cdc9e3db2",
+          "bc2a0789dd0008e1bf324c64",
+          "c99a0a55d2ed53caf77ac0d2",
+          "d5419b70f9e2e22fc555af0e",
+          "99cbb46a30e941ec4102d83d"
+        ],
+        "selected": [
+          {
+            "chunk_id": "e7549018cc76d93b7a5b3cea",
+            "rrf_score": 0.01639344262295082,
+            "channel_ranks": {
+              "vector": 1
+            }
+          },
+          {
+            "chunk_id": "df4be5720591f9b9066a465c",
+            "rrf_score": 0.016129032258064516,
+            "channel_ranks": {
+              "vector": 2
+            }
+          },
+          {
+            "chunk_id": "f74b546f74c81617bbbdfae3",
+            "rrf_score": 0.015873015873015872,
+            "channel_ranks": {
+              "vector": 3
+            }
+          },
+          {
+            "chunk_id": "d2c870c8b1628d9a3f3212a9",
+            "rrf_score": 0.015625,
+            "channel_ranks": {
+              "vector": 4
+            }
+          }
+        ]
+      },
+      "citations": [
+        {
+          "chunk_id": "e7549018cc76d93b7a5b3cea",
+          "document_id": "C001",
+          "version": 1,
+          "title": "退款审批",
+          "location": "lines 1-3",
+          "source": "synthetic/C001.md",
+          "quote": "事实：退款审批上限为 500 元。",
+          "url": "/citations/e7549018cc76d93b7a5b3cea"
+        },
+        {
+          "chunk_id": "df4be5720591f9b9066a465c",
+          "document_id": "C005",
+          "version": 1,
+          "title": "补偿额度",
+          "location": "lines 1-3",
+          "source": "synthetic/C005.md",
+          "quote": "事实：补偿额度每单最多 80 元。",
+          "url": "/citations/df4be5720591f9b9066a465c"
+        },
+        {
+          "chunk_id": "f74b546f74c81617bbbdfae3",
+          "document_id": "C003",
+          "version": 1,
+          "title": "客户回访",
+          "location": "lines 1-3",
+          "source": "synthetic/C003.md",
+          "quote": "事实：客户回访应在结单后三天内完成。",
+          "url": "/citations/f74b546f74c81617bbbdfae3"
+        },
+        {
+          "chunk_id": "d2c870c8b1628d9a3f3212a9",
+          "document_id": "S003",
+          "version": 1,
+          "title": "培训安排",
+          "location": "lines 1-5",
+          "source": "synthetic/S003.md",
+          "quote": "事实：培训安排为每周三下午两点。",
+          "url": "/citations/d2c870c8b1628d9a3f3212a9"
+        }
+      ]
+    }
+  ],
+  "model": "http:text-embedding-v4:1024:5891aed827c4",
+  "embedding_attempts": 2,
+  "chat_attempts": 0,
+  "budget": {
+    "embedding": {
+      "used": 11,
+      "limit": 12
+    },
+    "chat": {
+      "used": 4,
+      "limit": 4
+    }
+  },
+  "scope": "Two synthetic smoke queries prove routing/fusion, not general quality improvement."
+}
