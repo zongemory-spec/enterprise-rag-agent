@@ -1,0 +1,314 @@
+[
+  {
+    "document_id": "S001",
+    "title": "差旅报销",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S001.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S001.md"
+  },
+  {
+    "document_id": "S002",
+    "title": "入职材料",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S002.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S002.md"
+  },
+  {
+    "document_id": "S003",
+    "title": "培训安排",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S003.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S003.md"
+  },
+  {
+    "document_id": "S004",
+    "title": "请假流程",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S004.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S004.md"
+  },
+  {
+    "document_id": "S005",
+    "title": "办公时间",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S005.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S005.md"
+  },
+  {
+    "document_id": "S006",
+    "title": "访客登记",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S006.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S006.md"
+  },
+  {
+    "document_id": "S007",
+    "title": "设备借用",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S007.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S007.md"
+  },
+  {
+    "document_id": "S008",
+    "title": "密码管理",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S008.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S008.md"
+  },
+  {
+    "document_id": "S009",
+    "title": "会议预约",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S009.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S009.md"
+  },
+  {
+    "document_id": "S010",
+    "title": "远程办公",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/S010.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "S010.md"
+  },
+  {
+    "document_id": "C001",
+    "title": "退款审批",
+    "allowed_groups": [
+      "support"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/C001.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "C001.md"
+  },
+  {
+    "document_id": "C002",
+    "title": "工单升级",
+    "allowed_groups": [
+      "support"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/C002.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "C002.md"
+  },
+  {
+    "document_id": "C003",
+    "title": "客户回访",
+    "allowed_groups": [
+      "support"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/C003.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "C003.md"
+  },
+  {
+    "document_id": "C004",
+    "title": "客服排班",
+    "allowed_groups": [
+      "support"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/C004.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "C004.md"
+  },
+  {
+    "document_id": "C005",
+    "title": "补偿额度",
+    "allowed_groups": [
+      "support"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/C005.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "C005.md"
+  },
+  {
+    "document_id": "C006",
+    "title": "服务承诺",
+    "allowed_groups": [
+      "support"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/C006.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "C006.md"
+  },
+  {
+    "document_id": "E001",
+    "title": "发布窗口",
+    "allowed_groups": [
+      "engineering"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/E001.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "E001.md"
+  },
+  {
+    "document_id": "E002",
+    "title": "密钥轮换",
+    "allowed_groups": [
+      "engineering"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/E002.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "E002.md"
+  },
+  {
+    "document_id": "E003",
+    "title": "故障响应",
+    "allowed_groups": [
+      "engineering"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/E003.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "E003.md"
+  },
+  {
+    "document_id": "E004",
+    "title": "代码评审",
+    "allowed_groups": [
+      "engineering"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/E004.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "E004.md"
+  },
+  {
+    "document_id": "E005",
+    "title": "备份周期",
+    "allowed_groups": [
+      "engineering"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/E005.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "E005.md"
+  },
+  {
+    "document_id": "E006",
+    "title": "容量规划",
+    "allowed_groups": [
+      "engineering"
+    ],
+    "owner": "curator",
+    "tenant_id": "demo",
+    "version": 1,
+    "source": "synthetic/E006.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "E006.md"
+  },
+  {
+    "document_id": "O001",
+    "title": "异租户预算",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "other",
+    "version": 1,
+    "source": "synthetic/O001.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "O001.md"
+  },
+  {
+    "document_id": "O002",
+    "title": "异租户排班",
+    "allowed_groups": [
+      "public"
+    ],
+    "owner": "curator",
+    "tenant_id": "other",
+    "version": 1,
+    "source": "synthetic/O002.md",
+    "created_at": "2026-09-30T00:00:00Z",
+    "file": "O002.md"
+  }
+]

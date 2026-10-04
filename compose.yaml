@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg17
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: ${RAG_DB_PASSWORD:?Set RAG_DB_PASSWORD locally}
+      POSTGRES_DB: rag
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  rag:
+    build: .
+    ports:
+      - "127.0.0.1:8003:8003"
+    environment:
+      RAG_STORE: postgresql
+      RAG_PG_DSN: postgresql://rag@postgres:5432/rag
+      PGPASSWORD: ${RAG_DB_PASSWORD:?Set RAG_DB_PASSWORD locally}
+      RAG_PG_SCHEMA: rag_v2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - rag-data:/app/runtime
+volumes:
+  rag-data:
+  pg-data:
