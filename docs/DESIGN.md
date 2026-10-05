@@ -47,7 +47,7 @@ flowchart LR
 提示注入无法添加新工具、改变服务端身份或跨部门检索。真实模型可能选择不相关但逐字存在的摘录，服务端不能仅凭 substring 检测回答质量。runs 表不保存原文；检查点会保存工具调用和结果，恢复时重新验证权限和版本，资料改变则拒绝恢复。数据库访问者仍可读取检查点，需要操作系统和数据库访问控制。
 凭证文件是本机演示机制；不具备生产 SSO、TLS、流量限制、备份加密、审计保留策略与管理员门户。仅绑定本机。服务和 SQLite 文件若被篡改，不在模型攻击威胁模型内。
 只读 Agent 默认规则规划，外部规划每轮限时 15 秒、最多三次调用，每个检索还可能触发生成请求（20 秒）及 embedding；这不是全链路的硬总时限，网络读取超时也不等于整个系统的延迟 SLA。
-已实测 PostgreSQL/pgvector 和真实 Qwen/embedding 小样本。Docker、真实 Langfuse 后端、人工评审及生产能力仍未验收，不能宣称 R0–R6 全部完成。详细证据见 UPGRADE_20261001.md 与交付报告。
+已实测 PostgreSQL/pgvector 和真实 Qwen/embedding 小样本。2026-10-02 补齐 Docker 实际构建运行、真实 Langfuse 4 写入查询及 PG 检查点跨容器重启恢复。人工评审及生产能力仍未验收，不能宣称 R0–R6 全部完成。详细证据见 UPGRADE_20261001.md、UPGRADE_20261002.md 与交付报告。
 
 参考：pgvector https://github.com/pgvector/pgvector ，psycopg 参数绑定 https://www.psycopg.org/psycopg3/docs/basic/params.html ，pypdf https://pypdf.readthedocs.io/en/stable/user/extract-text.html 。
 

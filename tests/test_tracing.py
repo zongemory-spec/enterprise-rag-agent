@@ -12,9 +12,9 @@ class TracingTests(unittest.TestCase):
         received=[]
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self):
-                received.append((self.path,json.loads(self.rfile.read(int(self.headers['Content-Length'])))))
-                self.send_response(207);self.send_header('Content-Type','application/json');self.end_headers()
-                self.wfile.write(b'{"successes":[],"errors":[]}')
+                received.append((self.path,json.loads(self.rfile.read(int(self.headers['Content-Length']))),self.headers.get('x-langfuse-ingestion-version')))
+                self.send_response(200);self.send_header('Content-Type','application/json');self.end_headers()
+                self.wfile.write(b'{}')
             def log_message(self,*args):pass
         server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
         worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
@@ -22,9 +22,14 @@ class TracingTests(unittest.TestCase):
             tracer=LangfuseTracer('http://127.0.0.1:'+str(server.server_port),'test-public','test-secret')
             tracer.record('/agent',10,200)
             self.assertEqual(tracer.last_status,'accepted')
-            self.assertEqual(received[0][0],'/api/public/ingestion')
-            event=received[0][1]['batch'][0]
-            self.assertEqual(set(event['body']['metadata']),{'duration_ms','status'})
+            self.assertEqual(received[0][0],'/api/public/otel/v1/traces')
+            self.assertEqual(received[0][2],'4')
+            span=received[0][1]['resourceSpans'][0]['scopeSpans'][0]['spans'][0]
+            self.assertEqual(span['name'],'/agent')
+            self.assertEqual(len(span['traceId']),32)
+            self.assertEqual(len(span['spanId']),16)
+            self.assertEqual(int(span['endTimeUnixNano'])-int(span['startTimeUnixNano']),10_000_000)
+            self.assertEqual({a['key'] for a in span['attributes']},{'langfuse.observation.type','langfuse.observation.metadata.duration_ms','langfuse.observation.metadata.status'})
             self.assertNotIn('test-secret',json.dumps(received))
         finally:server.shutdown();server.server_close();worker.join()
 
@@ -36,7 +41,7 @@ class TracingTests(unittest.TestCase):
 
     def test_partial_batch_rejection_and_missing_credentials(self):
         tracer=LangfuseTracer('https://example.invalid','test-public','test-secret')
-        response=httpx.Response(207,json={'errors':[{'id':'bad'}]},request=httpx.Request('POST','https://example.invalid'))
+        response=httpx.Response(200,json={'partialSuccess':{'rejectedSpans':'1'}},request=httpx.Request('POST','https://example.invalid'))
         with patch('rag_app.tracing.httpx.post',return_value=response):tracer.record('/ask',1,200)
         self.assertEqual(tracer.last_status,'rejected')
         with patch.dict('os.environ',{'RAG_TRACING':'langfuse','LANGFUSE_BASE_URL':'','LANGFUSE_PUBLIC_KEY':'','LANGFUSE_SECRET_KEY':''}):

@@ -1,4 +1,6 @@
-# Enterprise RAG Agent v3
+# Enterprise RAG Agent v3.1
+
+2026-10-02：修复 Langfuse 4 默认模式拒绝旧 ingestion 接口的问题，使用 OTLP/HTTP JSON。已实际构建并运行 Docker 镜像、验证 PG 检查点跨容器重启恢复、从真实 Langfuse 后台查询到请求记录。详见 docs/UPGRADE_20261002.md。旧 v3 目录保留。
 
 24 份合成文档、权限预过滤、引用再次鉴权、只读工具和持久化任务。SQLite 可独立运行；PostgreSQL 模式保存全部业务状态与向量，不再依赖 SQLite 影子主库。
 
@@ -49,19 +51,21 @@ POST /agent 可提交 workflow_id，最多 64 个字母、数字、下划线或�
 
 ## Langfuse
 
-已实现 HTTP ingestion 适配器并接入 API 请求审计，不是 Noop 占位。默认关闭。设置 RAG_TRACING=langfuse，以及 LANGFUSE_BASE_URL、LANGFUSE_PUBLIC_KEY、LANGFUSE_SECRET_KEY 后启用。
+已实现 OTLP/HTTP JSON 适配器并接入 API 请求审计。使用 /api/public/otel/v1/traces 和 x-langfuse-ingestion-version: 4；不再发送旧 trace-create 事件。默认关闭。设置 RAG_TRACING=langfuse，以及 LANGFUSE_BASE_URL、LANGFUSE_PUBLIC_KEY、LANGFUSE_SECRET_KEY 后启用。
 
-仅发送路由模板、耗时和状态码，不发送问题、资料或身份。失败不阻断业务；app.state.tracer.last_status 可检查最近状态。已验证本地 HTTP 接收器、部分拒收和网络异常；没有真实后端凭据，不能声称控制台已验收。仅请求级追踪，未实现模型逐 span 追踪或持久化发送队列。
+仅发送路由模板、耗时、状态码和固定服务标识，不发送问题、资料或身份。失败不阻断业务；app.state.tracer.last_status 可检查最近状态。已验证本地 HTTP 接收器、部分拒收、网络异常，并在真实 Langfuse 4 后台通过 Observations API v2 读回记录。仅请求级追踪，未实现模型逐 span 追踪或持久化发送队列；未声称人工控制台验收。
 
 ## Docker
 
 compose.yaml 包含 PG/pgvector 与 RAG，数据使用命名卷，应用端口仅绑定本机 8003。先设置非空 RAG_DB_PASSWORD，再运行 docker compose up --build。容器数据库用户仅作本地合成演示。
 
-已修复启动文件与 .dockerignore 不匹配。**Docker Desktop 尚未安装，镜像没有实际构建或运行。** 上次检测固件虚拟化未开启；须在具备系统权限时完成安装与环境准备，不能把配置交付当作容器验收。
+已在 Docker Engine 29.8.1 实际构建运行。验证首页、健康、未登录拒绝、PG 向量检索、容器重启后恢复同一 workflow，以及跨用户拒绝和问题变更拒绝。本机 Docker 镜像和数据卷磁盘位于 D:\Docker\data\DockerDesktopWSL。
+
+本机一键启动：运行 D:\Docker\project-deployments\Start-Projects.ps1。它使用同目录的私密环境文件与 Langfuse 部署覆盖配置；这些机器配置不包含在源码包中。容器账户凭证导出到同目录 lab-demo-auth.json 和 rag-demo-auth.json。本机现有容器项目名保留 enterprise-rag-v3，以沿用数据卷；实际源码与镜像内容为 v3.1。
 
 ## 验证与边界
 
-54 项测试全部通过，含 PostgreSQL 17.11 / pgvector 0.8.6、迁移、事务回滚、跨进程恢复和权限重验。数据库验证使用工作区临时合成测试库和非超级用户应用角色，不代表 D 盘部署或 Docker 已验证。
+v3.1 的 54 项测试全部通过，无跳过，含真实 PostgreSQL 17.11 / pgvector 0.8.6、迁移、事务回滚、跨进程恢复和权限重验。数据库回归使用非超级用户应用角色；另行通过真实容器端到端验收。compose 中的数据库角色是本机演示用超级用户，不应直接用于生产部署。
 
 运行 python -m unittest discover -s tests -v；未设置 RAG_TEST_PG_DSN 时六项 PG 测试跳过。测试使用唯一 schema，保留供检查。
 
