@@ -10,17 +10,16 @@ def populate(store):
     manifest=json.loads((ROOT/"data/synthetic/manifest.json").read_text(encoding="utf-8"))
     for doc in manifest:
         # On restart preserve administrative revocations and updates.
-        with store.connect() as c:
-            exists=c.execute("SELECT 1 FROM documents WHERE document_id=? LIMIT 1",(doc["document_id"],)).fetchone()
+        exists=store.exists(doc["document_id"])
         if not exists:
             text,locations=parse_file(ROOT/"data/synthetic"/doc["file"])
             store.upsert(doc,text,locations)
-    with store.connect() as c:
-        c.execute("INSERT OR IGNORE INTO tickets VALUES ('T1001','demo','alice','open')")
-        c.execute("INSERT OR IGNORE INTO tickets VALUES ('T1002','demo','bob','resolved')")
+    store.seed_ticket("T1001","demo","alice","open")
+    store.seed_ticket("T1002","demo","bob","resolved")
 
 def main():
-    store=Store(os.getenv("RAG_DB",str(ROOT/"data/rag.sqlite3")))
+    from rag_app.settings import open_store
+    store=open_store()
     populate(store)
     path=Path(os.getenv("RAG_AUTH_FILE",str(ROOT/"data/demo_auth.json")))
     path.parent.mkdir(parents=True,exist_ok=True)

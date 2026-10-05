@@ -52,6 +52,11 @@ def split_text(text, max_chars=500):
     return chunks
 
 class Store:
+    backend="sqlite"
+    def exists(self,doc_id):
+        with self.connect() as c:return c.execute("SELECT 1 FROM documents WHERE document_id=? LIMIT 1",(doc_id,)).fetchone() is not None
+    def seed_ticket(self,*args):
+        with self.connect() as c:c.execute("INSERT OR IGNORE INTO tickets VALUES (?,?,?,?)",args)
     def __init__(self,path):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True,exist_ok=True)

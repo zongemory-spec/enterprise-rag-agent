@@ -19,7 +19,8 @@ class Question(BaseModel):
     top_k:int=Field(default=4,ge=1,le=8)
 
 def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
-    store=store or Store(os.getenv("RAG_DB","data/rag.sqlite3"))
+    from rag_app.settings import open_store
+    store=store or open_store()
     auth=auth or Registry.from_file(os.getenv("RAG_AUTH_FILE","data/demo_auth.json"))
     if os.getenv("RAG_GENERATOR","extractive")=="real" and generator is None:
         from rag_app.generation import HTTPQuoteGenerator
@@ -33,7 +34,11 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
         if os.getenv("RAG_EMBEDDING","hash")=="real":
             from rag_app.embedding import HTTPEmbedding
             embedder=HTTPEmbedding(os.environ["RAG_EMBED_URL"],os.environ["RAG_EMBED_KEY"],os.environ["RAG_EMBED_MODEL"],int(os.environ["RAG_EMBED_DIM"]))
-        pg_index=PGIndex(os.environ["RAG_PG_DSN"],embedder)
+        if getattr(store,"backend","sqlite")=="postgresql":
+            from rag_app.pg_native_index import NativePGIndex
+            pg_index=NativePGIndex(store,embedder)
+        else:
+            pg_index=PGIndex(os.environ["RAG_PG_DSN"],embedder)
     service=Service(store,generator,pg_index)
     app=FastAPI(title="企业知识问答原型")
     audit_logger=logging.getLogger("rag.audit")

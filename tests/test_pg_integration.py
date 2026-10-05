@@ -1,23 +1,55 @@
-import os
-from pathlib import Path
-import tempfile
-import unittest
+import os,unittest,uuid
+from concurrent.futures import ThreadPoolExecutor
 from init_demo import populate
-from rag_app.pg_index import PGIndex
-from rag_app.security import Actor
-from rag_app.store import Store
-
-@unittest.skipUnless(os.getenv("RAG_TEST_PG_DSN"),"Local PostgreSQL/pgvector is not configured")
+from rag_app.postgres_store import PostgresStore
+from rag_app.pg_native_index import NativePGIndex
+from rag_app.security import Actor,AccessError
+@unittest.skipUnless(os.getenv("RAG_TEST_PG_DSN"),"PostgreSQL test DSN required")
 class PGIntegration(unittest.TestCase):
-    def test_vector_sql_acl_and_stale_index(self):
-        with tempfile.TemporaryDirectory() as td:
-            store=Store(Path(td)/"pg.sqlite3");populate(store)
-            index=PGIndex(os.environ["RAG_TEST_PG_DSN"])
-            self.assertGreater(index.sync(store),0)
-            alice=Actor("alice","demo",("support",))
-            rows=index.retrieve(store,alice,"退款审批")
-            self.assertIn("C001",{r["document_id"] for r in rows})
-            self.assertFalse(any(r["document_id"].startswith("E") for r in index.retrieve(store,alice,"发布窗口")))
-            store.deactivate("C001")
-            self.assertEqual(index.retrieve(store,alice,"退款审批"),[])
-
+    def setUp(self):
+        self.store=PostgresStore(os.environ["RAG_TEST_PG_DSN"],"test_"+uuid.uuid4().hex)
+        populate(self.store)
+        self.alice=Actor("alice","demo",("support",))
+    def test_native_vector_acl_and_generation(self):
+        index=NativePGIndex(self.store)
+        self.assertGreater(index.sync(),0)
+        self.assertIn("C001",{r["document_id"] for r in index.retrieve(self.store,self.alice,"退款审批")})
+        self.assertFalse(any(r["document_id"].startswith("E") for r in index.retrieve(self.store,self.alice,"发布窗口")))
+        self.store.deactivate("C001")
+        self.assertEqual(index.retrieve(self.store,self.alice,"退款审批"),[])
+        index.sync()
+        self.assertFalse(any(r["document_id"]=="C001" for r in index.retrieve(self.store,self.alice,"退款审批")))
+    def test_history_revocation_and_tenant(self):
+        row=next(r for r in self.store.authorized_chunks(self.alice) if r["document_id"]=="C001")
+        self.store.save_run("run",self.alice,[row["chunk_id"]],{})
+        self.store.deactivate("C001")
+        self.assertEqual(self.store.run("run",self.alice)["redacted_chunks"],1)
+        with self.assertRaises(AccessError):self.store.citation(row["chunk_id"],self.alice)
+        with self.assertRaises(AccessError):self.store.run("run",Actor("alice","other",("support",)))
+        with self.assertRaises(AccessError):self.store.ticket("T1002",self.alice)
+        self.assertEqual(self.store.ticket("T1001",self.alice)["status"],"open")
+    def test_concurrent_upsert_and_rollback(self):
+        doc={"document_id":"NEW","version":1,"title":"Test","source":"synthetic","tenant_id":"demo","owner":"alice","allowed_groups":["support"],"created_at":"2026-10-01"}
+        with ThreadPoolExecutor(2) as pool:
+            results=list(pool.map(lambda _:self.store.upsert(doc,"test content"),range(2)))
+        self.assertEqual(sorted(results),[False,True])
+        version=self.store.index_version
+        with self.assertRaises(Exception):self.store.upsert(dict(doc,version=2),"changed",[("location",None)])
+        self.assertEqual(self.store.index_version,version)
+        self.assertEqual([r["version"] for r in self.store.authorized_chunks(self.alice) if r["document_id"]=="NEW"],[1])
+        with self.assertRaises(ValueError):self.store.upsert(dict(doc,version=2,tenant_id="other"),"bad")
+    def test_native_api_and_restart(self):
+        from fastapi.testclient import TestClient
+        from rag_app.api import create_app
+        from rag_app.security import Registry
+        import inspect
+        class Auth:
+            def authenticate(inner,value):return self.alice
+        index=NativePGIndex(self.store);index.sync()
+        with TestClient(create_app(self.store,Auth(),pg_index=index)) as client:
+            r=client.post("/ask",json={"query":"退款审批","method":"pgvector"})
+            self.assertEqual(r.status_code,200,r.text)
+        again=PostgresStore(self.store.dsn,self.store.schema)
+        self.assertEqual(again.index_version,self.store.index_version)
+        with again.connect() as c:
+            self.assertGreater(c.execute("SELECT count(*) AS n FROM audit").fetchone()["n"],0)
