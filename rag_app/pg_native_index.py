@@ -22,7 +22,14 @@ class NativePGIndex:
             c.execute("DELETE FROM embeddings WHERE model_id=%s",(self.model_id,))
             for row,v in zip(rows,vectors):c.execute("INSERT INTO embeddings VALUES (%s,%s,%s,%s::vector)",(row["chunk_id"],self.model_id,generation,json.dumps(v)))
         return len(rows)
+    def status(self):
+        generation=self.store.index_version
+        with self.store.connect() as c:
+            expected=c.execute('SELECT COUNT(*) AS n FROM chunks c JOIN documents d USING(document_id,version) WHERE d.active=1').fetchone()['n']
+            indexed=c.execute('SELECT COUNT(*) AS n FROM embeddings e JOIN chunks c USING(chunk_id) JOIN documents d USING(document_id,version) WHERE e.model_id=%s AND e.generation=%s AND d.active=1',(self.model_id,generation)).fetchone()['n']
+        return {'model_id':self.model_id,'kind':'semantic' if self.embedder else 'lexical-hash','expected_chunks':expected,'indexed_chunks':indexed,'ready':expected>0 and indexed==expected,'index_version':generation}
     def retrieve(self,store,actor,query,top_k=4):
+        if not self.status()['ready']:raise AccessError('vector_index_not_ready_rebuild_required',409)
         generation=store.index_version;v=json.dumps(self.vectors([query])[0])
         with store.connect() as c:
             rows=c.execute("""SELECT c.chunk_id,1-(e.embedding <=> %s::vector) AS score
