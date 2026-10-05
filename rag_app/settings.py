@@ -20,7 +20,8 @@ def configure_runtime(real=False):
         os.environ.setdefault("RAG_EMBED_URL",os.environ["RAG_MODEL_URL"])
         os.environ.setdefault("RAG_EMBED_MODEL","text-embedding-v4")
         os.environ.setdefault("RAG_EMBED_DIM","1024")
-        os.environ.update(RAG_GENERATOR="real",RAG_EMBEDDING="real",RAG_PLANNER="real")
+        # Real chat does not imply paid embeddings. Retrieval defaults to local methods.
+        os.environ.update(RAG_PLANNER="real",RAG_SYNTHESIS="real")
     return cfg
 def open_store():
     if os.getenv("RAG_STORE")=="postgresql":

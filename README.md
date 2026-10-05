@@ -1,3 +1,5 @@
+> 本目录为 v3.2。新增真实模型多步 Agent 的启动、验证和边界说明见 [真实Agent升级与启动](docs/真实Agent升级与启动.md)。下方保留 v3.1 基线说明；新本地端口为 8004。
+
 # Enterprise RAG Agent v3.1
 
 2026-10-02：修复 Langfuse 4 默认模式拒绝旧 ingestion 接口的问题，使用 OTLP/HTTP JSON。已实际构建并运行 Docker 镜像、验证 PG 检查点跨容器重启恢复、从真实 Langfuse 后台查询到请求记录。详见 docs/UPGRADE_20261002.md。旧 v3 目录保留。
