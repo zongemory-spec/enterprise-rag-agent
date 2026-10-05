@@ -15,7 +15,21 @@ class Service:
 
     def ask(self,query,actor,method="keyword",top_k=4):
         start=time.perf_counter();version=self.store.index_version
-        if method=="pgvector":
+        retrieval_trace=None
+        if method=='hybrid':
+            if self.pg_index is None:raise AccessError('pgvector_not_configured',503)
+            from rag_app.hybrid import fuse
+            window=max(12,top_k*3)
+            keyword=rank(query,self.store.authorized_chunks(actor),'keyword',window)
+            vector=self.pg_index.retrieve(self.store,actor,query,window)
+            # Reauthorize both lists before exposing ranks or generating an answer.
+            for row in keyword+vector:self.store.citation(row['chunk_id'],actor)
+            chunks=fuse(keyword,vector,top_k)
+            retrieval_trace={'fusion':'rrf','rank_constant':60,'candidate_window':window,
+                'keyword_candidates':[r['chunk_id'] for r in keyword],
+                'vector_candidates':[r['chunk_id'] for r in vector],
+                'selected':[{'chunk_id':r['chunk_id'],'rrf_score':r['rrf_score'],'channel_ranks':r['channel_ranks']} for r in chunks]}
+        elif method=="pgvector":
             if self.pg_index is None:raise AccessError("pgvector_not_configured",503)
             chunks=self.pg_index.retrieve(self.store,actor,query,top_k)
         else:
@@ -49,9 +63,10 @@ class Service:
                 "citations":citations,"refused":refused,"retrieved_chunk_ids":[c["chunk_id"] for c in chunks],
                 "context_chunk_ids":[c["chunk_id"] for c in chunks],
                 "index_version":version,"retrieval_method":method,
-                "embedding_model":(self.pg_index.model_id if method=="pgvector" else MODEL_ID if method=="hash-vector" else None),
+                "embedding_model":(self.pg_index.model_id if method in ('pgvector','hybrid') else MODEL_ID if method=="hash-vector" else None),
                 "generation_model":self.generator.model_id,"latency_ms":round((time.perf_counter()-start)*1000,3),
-                "usage":generated.get("usage"),"cost":generated.get("cost"),"currency":generated.get("currency")}
+                "usage":generated.get("usage"),"cost":generated.get("cost"),"currency":generated.get("currency"),
+                "retrieval_trace":retrieval_trace}
         self.store.save_run(result["run_id"],actor,result["context_chunk_ids"],
             {k:result[k] for k in ("index_version","retrieval_method","embedding_model","generation_model","latency_ms","usage","cost","currency","refused")})
         return result

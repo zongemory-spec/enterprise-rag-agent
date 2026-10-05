@@ -25,7 +25,7 @@ def configure_runtime(real=False,semantic=False):
     if semantic:
         if os.getenv('RAG_STORE')!='postgresql':raise RuntimeError('Semantic mode requires PostgreSQL configuration.')
         os.environ['RAG_EMBEDDING']='real'
-        os.environ.setdefault('RAG_BUDGET_DB',str(ROOT/'data/request_budget.sqlite3'))
+        os.environ.setdefault('RAG_BUDGET_DB',cfg.get('budget_db') or str(ROOT/'data/request_budget.sqlite3'))
     return cfg
 def open_store():
     if os.getenv("RAG_STORE")=="postgresql":

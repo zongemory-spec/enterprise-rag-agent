@@ -16,7 +16,7 @@ from rag_app.service import Service
 class Question(BaseModel):
     model_config=ConfigDict(extra="forbid",strict=True)
     query:str=Field(min_length=1,max_length=2000)
-    method:Literal["keyword","hash-vector","pgvector"]="keyword"
+    method:Literal["keyword","hash-vector","pgvector","hybrid"]="keyword"
     top_k:int=Field(default=4,ge=1,le=8)
 
 class AgentQuestion(Question):

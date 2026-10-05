@@ -1,7 +1,7 @@
 ﻿param([switch]$Real, [switch]$Semantic, [switch]$BuildIndex, [string]$ProviderEnvFile)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
-$arguments = @('run_server.py', '--port', '8005')
+$arguments = @('run_server.py', '--port', '8006')
 if ($Real) {
     if ($ProviderEnvFile) { $env:RAG_PROVIDER_ENV_FILE = $ProviderEnvFile }
     $arguments += '--real'
