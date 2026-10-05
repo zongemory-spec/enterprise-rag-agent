@@ -1,0 +1,28 @@
+name: offline-and-pgvector
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.6-pg17
+        env:
+          POSTGRES_USER: rag
+          POSTGRES_PASSWORD: local-demo-only
+          POSTGRES_DB: rag
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rag" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      RAG_TEST_PG_DSN: postgresql://rag:local-demo-only@localhost:5432/rag
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.lock
+      - run: python -m unittest discover -s tests -v
+      - run: python evaluate.py --split dev --out reports/ci-dev.json
+

@@ -1,0 +1,10 @@
+services:
+  rag:
+    build: .
+    ports:
+      - "127.0.0.1:8001:8001"
+    volumes:
+      - rag-data:/app/runtime
+volumes:
+  rag-data:
+
