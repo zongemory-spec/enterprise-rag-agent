@@ -8,3 +8,31 @@ dist/
 
 
 data/local_config.json
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+data/demo_auth.json
+data/local_config.json
+# Dependencies and generated outputs
+.venv*/
+node_modules/
+__pycache__/
+*.py[cod]
+dist/
+build/
+*.tsbuildinfo
+*.log
+*.sqlite*
+*.db
+*.db-wal
+*.db-shm
+models/
+keys/
+logs/
+signatures/
+INTERVIEW_NOTES.md
+local_baseline/
