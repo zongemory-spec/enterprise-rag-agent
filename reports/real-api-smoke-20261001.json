@@ -1,0 +1,214 @@
+{
+  "started": "2026-10-01T12:58:46.420797+00:00",
+  "scope": "synthetic smoke only, not a benchmark or security rate",
+  "lab": {
+    "cases": [
+      {
+        "case": "own_profile",
+        "status": "completed",
+        "tool_trace": [
+          {
+            "round": 1,
+            "tool": "get_own_profile",
+            "ok": true,
+            "audit": "executed",
+            "action_id": null
+          }
+        ],
+        "not_a_security_rate": true
+      },
+      {
+        "case": "cross_user",
+        "status": "completed",
+        "tool_trace": [],
+        "not_a_security_rate": true
+      }
+    ],
+    "usage": [
+      {
+        "model": "qwen3.8-max",
+        "usage": {
+          "completion_tokens": 26,
+          "prompt_tokens": 902,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "text_tokens": 902
+          },
+          "total_tokens": 928
+        }
+      },
+      {
+        "model": "qwen3.8-max",
+        "usage": {
+          "completion_tokens": 40,
+          "prompt_tokens": 964,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "text_tokens": 964
+          },
+          "total_tokens": 1004
+        }
+      },
+      {
+        "model": "qwen3.8-max",
+        "usage": {
+          "completion_tokens": 46,
+          "prompt_tokens": 904,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "text_tokens": 904
+          },
+          "total_tokens": 950
+        }
+      }
+    ]
+  },
+  "rag": {
+    "cases": [
+      {
+        "query": "退款审批",
+        "status": "completed",
+        "refused": false,
+        "documents": [
+          "C001"
+        ],
+        "usage": {
+          "completion_tokens": 43,
+          "prompt_tokens": 308,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "text_tokens": 308
+          },
+          "total_tokens": 351
+        }
+      },
+      {
+        "query": "发布窗口",
+        "status": "completed",
+        "refused": true,
+        "documents": [],
+        "usage": {
+          "completion_tokens": 4,
+          "prompt_tokens": 329,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "text_tokens": 329
+          },
+          "total_tokens": 333
+        }
+      }
+    ],
+    "embedding_model": "http:text-embedding-v4:1024",
+    "cost": null,
+    "indexed_chunks": 24,
+    "planner": {
+      "tool_calls": 1,
+      "trace": [
+        {
+          "tool": "get_ticket_status",
+          "status": "completed"
+        }
+      ]
+    },
+    "usage": {
+      "embedding": [
+        {
+          "model": "text-embedding-v4",
+          "usage": {
+            "prompt_tokens": 355,
+            "total_tokens": 355
+          },
+          "items": 10
+        },
+        {
+          "model": "text-embedding-v4",
+          "usage": {
+            "prompt_tokens": 305,
+            "total_tokens": 305
+          },
+          "items": 10
+        },
+        {
+          "model": "text-embedding-v4",
+          "usage": {
+            "prompt_tokens": 124,
+            "total_tokens": 124
+          },
+          "items": 4
+        },
+        {
+          "model": "text-embedding-v4",
+          "usage": {
+            "prompt_tokens": 3,
+            "total_tokens": 3
+          },
+          "items": 1
+        },
+        {
+          "model": "text-embedding-v4",
+          "usage": {
+            "prompt_tokens": 3,
+            "total_tokens": 3
+          },
+          "items": 1
+        }
+      ],
+      "generator": [
+        {
+          "model": "qwen3.8-max",
+          "usage": {
+            "completion_tokens": 43,
+            "prompt_tokens": 308,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "text_tokens": 308
+            },
+            "total_tokens": 351
+          }
+        },
+        {
+          "model": "qwen3.8-max",
+          "usage": {
+            "completion_tokens": 4,
+            "prompt_tokens": 329,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "text_tokens": 329
+            },
+            "total_tokens": 333
+          }
+        }
+      ],
+      "planner": [
+        {
+          "model": "qwen3.8-max",
+          "usage": {
+            "completion_tokens": 18,
+            "prompt_tokens": 105,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "text_tokens": 105
+            },
+            "total_tokens": 123
+          }
+        },
+        {
+          "model": "qwen3.8-max",
+          "usage": {
+            "completion_tokens": 1,
+            "prompt_tokens": 165,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "text_tokens": 165
+            },
+            "total_tokens": 166
+          }
+        }
+      ]
+    }
+  },
+  "attempted_requests": {
+    "chat": 7,
+    "embedding": 5
+  }
+}

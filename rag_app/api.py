@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from uuid import uuid4
 from fastapi import FastAPI,Depends,Request
@@ -17,6 +18,9 @@ class Question(BaseModel):
     query:str=Field(min_length=1,max_length=2000)
     method:Literal["keyword","hash-vector","pgvector"]="keyword"
     top_k:int=Field(default=4,ge=1,le=8)
+
+class AgentQuestion(Question):
+    workflow_id:str | None=Field(default=None,min_length=1,max_length=64,pattern=r"^[A-Za-z0-9_-]+$")
 
 def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
     from rag_app.settings import open_store
@@ -40,6 +44,11 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
         else:
             pg_index=PGIndex(os.environ["RAG_PG_DSN"],embedder)
     service=Service(store,generator,pg_index)
+    from rag_app.checkpoint import Checkpointer
+    from rag_app.tracing import configured_tracer
+    checkpoints=Checkpointer(os.getenv("RAG_CHECKPOINT_DB","data/checkpoints.sqlite3"),
+                             store if getattr(store,"backend",None)=="postgresql" else None)
+    tracer=configured_tracer()
     app=FastAPI(title="企业知识问答原型")
     audit_logger=logging.getLogger("rag.audit")
     audit_logger.setLevel(logging.INFO)
@@ -49,9 +58,11 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
         handler.setFormatter(logging.Formatter("%(message)s"))
         audit_logger.addHandler(handler)
     app.state.service=service
+    app.state.tracer=tracer
 
     @app.middleware("http")
     async def audit(request,call_next):
+        start=time.perf_counter()
         request.state.request_id=uuid4().hex
         request.state.reason="completed"
         try:r=await call_next(request)
@@ -60,6 +71,11 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
         store.audit(request.state.request_id,r.status_code,request.state.reason)
         audit_logger.info(json.dumps({"request_id":request.state.request_id,"status":r.status_code,"reason":request.state.reason}))
         r.headers["X-Request-ID"]=request.state.request_id
+        if tracer:
+            # Use route templates: arbitrary user paths and parameters are not exported.
+            route=getattr(request.scope.get("route"),"path","unmatched")
+            import asyncio
+            await asyncio.to_thread(tracer.record,route,(time.perf_counter()-start)*1000,r.status_code)
         return r
 
     @app.exception_handler(AccessError)
@@ -86,8 +102,9 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None):
         return service.ask(body.query,ctx,body.method,body.top_k)
 
     @app.post("/agent")
-    def agent(body:Question,ctx=Depends(authenticated)):
-        return service.agent(body.query,ctx,planner,body.method)
+    def agent(body:AgentQuestion,ctx=Depends(authenticated)):
+        from rag_app.workflow import execute
+        return execute(service,checkpoints,body.query,ctx,planner,body.method,body.workflow_id)
 
     @app.get("/citations/{chunk_id}")
     def citation(chunk_id:str,ctx=Depends(authenticated)):

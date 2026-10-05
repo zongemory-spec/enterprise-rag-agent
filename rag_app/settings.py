@@ -4,9 +4,9 @@ from dotenv import dotenv_values
 ROOT=Path(__file__).resolve().parents[1]
 def configure_runtime(real=False):
     path=ROOT/"data/local_config.json"
-    cfg=json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    cfg=json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {}
     if cfg.get("postgres_config"):
-        db=json.loads(Path(cfg["postgres_config"]).read_text(encoding="utf-8"))
+        db=json.loads(Path(cfg["postgres_config"]).read_text(encoding="utf-8-sig"))
         os.environ.update(RAG_PG_DSN=db["dsn"],RAG_PG_SCHEMA=cfg.get("postgres_schema","rag_v2"),RAG_STORE="postgresql")
     if real:
         source=os.getenv("RAG_PROVIDER_ENV_FILE") or cfg.get("provider_env_file")

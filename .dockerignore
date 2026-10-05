@@ -2,6 +2,8 @@
 !requirements.lock
 !Dockerfile
 !init_demo.py
+!run_server.py
+!sync_pg.py
 !rag_app/
 !rag_app/*.py
 !rag_app/ui.html

@@ -6,3 +6,5 @@ __pycache__/
 data/demo_auth.json
 dist/
 
+
+data/local_config.json

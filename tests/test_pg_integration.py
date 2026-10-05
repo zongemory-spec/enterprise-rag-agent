@@ -53,3 +53,20 @@ class PGIntegration(unittest.TestCase):
         self.assertEqual(again.index_version,self.store.index_version)
         with again.connect() as c:
             self.assertGreater(c.execute("SELECT count(*) AS n FROM audit").fetchone()["n"],0)
+
+    def test_sqlite_migration_is_read_only_and_preserves_revocation(self):
+        import tempfile,hashlib
+        from pathlib import Path
+        from rag_app.store import Store
+        from migrate_sqlite import migrate
+        with tempfile.TemporaryDirectory() as td:
+            path=Path(td)/"old.sqlite3"
+            old=Store(path);populate(old);old.deactivate("C001")
+            before=hashlib.sha256(path.read_bytes()).hexdigest()
+            target=PostgresStore(self.store.dsn,"migration_"+uuid.uuid4().hex)
+            counts=migrate(path,target)
+            self.assertEqual(counts["documents"],24)
+            self.assertEqual(target.index_version,old.index_version)
+            self.assertFalse(any(r["document_id"]=="C001" for r in target.authorized_chunks(self.alice)))
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),before)
+            with self.assertRaises(ValueError):migrate(path,target)
