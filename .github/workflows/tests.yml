@@ -30,5 +30,23 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.lock
       - run: python -m unittest discover -s tests -v
-      - run: python evaluate.py --split dev --out reports/ci-dev.json
+      - name: Evaluate offline dev baselines
+        run: python evaluate.py --split dev --out reports/ci-dev.json
+      - name: Add evaluation to job summary
+        if: always()
+        shell: bash
+        run: |
+          if test -f reports/ci-dev.md; then
+            cat reports/ci-dev.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload synthetic evaluation reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: offline-dev-evaluation-${{ github.sha }}
+          path: |
+            reports/ci-dev.json
+            reports/ci-dev.md
+          if-no-files-found: warn
+          retention-days: 14
 
