@@ -28,6 +28,24 @@ class PGIntegration(unittest.TestCase):
         with self.assertRaises(AccessError):self.store.run("run",Actor("alice","other",("support",)))
         with self.assertRaises(AccessError):self.store.ticket("T1002",self.alice)
         self.assertEqual(self.store.ticket("T1001",self.alice)["status"],"open")
+    def test_incremental_index_reuses_vectors_and_shared_application_state(self):
+        from rag_app.application_state import ApplicationState
+        from rag_app.document_management import Documents
+        index=NativePGIndex(self.store);index.sync()
+        self.assertEqual(index.sync(),0)
+        state=ApplicationState(self.store);documents=Documents(self.store,state,index)
+        uploaded=documents.upload(self.alice,'new.md',b'New upload policy: deadline is 12 days.','New upload policy',[])
+        self.assertFalse(index.status()['ready'])
+        index.sync()
+        self.assertEqual(index.last_sync['embedded_chunks'],1)
+        self.assertGreater(index.last_sync['retained_chunks'],0)
+        self.assertTrue(index.status()['ready'])
+        cid=state.create_conversation(self.alice)['conversation_id']
+        self.assertEqual(state.conversation(self.alice,cid)['version'],0)
+        documents.delete(self.alice,uploaded['document_id'],1)
+        self.assertEqual(index.sync(),0)
+        self.assertEqual(index.last_sync['removed_chunks'],1)
+
     def test_concurrent_upsert_and_rollback(self):
         doc={"document_id":"NEW","version":1,"title":"Test","source":"synthetic","tenant_id":"demo","owner":"alice","allowed_groups":["support"],"created_at":"2026-10-01"}
         with ThreadPoolExecutor(2) as pool:
