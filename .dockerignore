@@ -13,3 +13,10 @@
 !data/synthetic/manifest.json
 !data/questions.json
 
+
+!init_platform_auth.py
+!index_worker.py
+!verify_services.py
+!export_integrations.py
+!integrations/
+!integrations/**
