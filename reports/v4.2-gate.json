@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "checked_methods": [
+    "bm25",
+    "hybrid-local"
+  ],
+  "failures": [],
+  "note": "Small synthetic dev regression guard, not an enterprise SLA or a semantic correctness guarantee. Freeze a separate test split before final evaluation."
+}

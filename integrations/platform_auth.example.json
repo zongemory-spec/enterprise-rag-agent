@@ -1,0 +1,20 @@
+[
+  {
+    "platform": "dify",
+    "mode": "service",
+    "token": "replace_with_generated_private_token",
+    "tenant_id": "demo",
+    "user_id": "alice",
+    "groups": ["support"],
+    "knowledge_ids": ["enterprise"]
+  },
+  {
+    "platform": "coze",
+    "mode": "delegated",
+    "token": "replace_with_another_generated_private_token",
+    "tenant_id": "demo",
+    "user_id": "gateway",
+    "groups": ["support", "engineering"],
+    "knowledge_ids": ["enterprise"]
+  }
+]
