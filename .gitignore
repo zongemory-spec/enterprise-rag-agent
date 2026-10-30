@@ -36,3 +36,6 @@ logs/
 signatures/
 INTERVIEW_NOTES.md
 local_baseline/
+
+data/platform_auth.json
+data/service_probe_budget.sqlite3*
