@@ -1,0 +1,10 @@
+{
+  "upstream_url": "https://github.com/zongemory-spec/enterprise-rag-agent",
+  "upstream_commit": "6a08b94cb7e3cdef93945fbcde5a306a31c7b456",
+  "upstream_version": "3.4",
+  "package_version": "4.2",
+  "upgrade_date": "2026-10-29",
+  "ai_assisted": true,
+  "publication": "Local source distribution only; no upstream push performed.",
+  "positioning": "Personal learning and framework showcase, with selected enterprise-context design examples."
+}

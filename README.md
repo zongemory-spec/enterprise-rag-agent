@@ -1,122 +1,168 @@
-# Enterprise RAG Agent
+# RAG 与 Agent 个人展示项目 · v4.2
 
-An AI-assisted learning project for **authorized retrieval, tool workflows and repeatable evaluation**.
+一个用于学习与展示 **AI、大模型、RAG、Agent、LangChain 和 LangGraph** 的小型项目。默认使用本机 SQLite、合成资料和原文抽取即可运行；也提供真实模型和平台接入的可选路径。
 
-企业知识问答实验：先检查资料权限，再检索、生成回答与展示引用；使用合成数据观察工作流恢复、混合检索和评测结果。
+通过具体案例体现企业场景中的权限、引用、版本与评测意识。项目的主要目标是让设计可理解、流程可演示、结果可复现。
 
-[Quick start](#quick-start) · [Architecture](#architecture) · [Runtime modes](#runtime-modes) · [Walkthrough](docs/DEMO.md) · [Design & limits](docs/DESIGN.md) · [CI](https://github.com/zongemory-spec/enterprise-rag-agent/actions/workflows/tests.yml)
+## 先运行，再看设计
 
-## What this project demonstrates
+使用 Python 3.12，在解压后的目录运行：
 
-| Area | Implemented behavior |
-| :--- | :--- |
-| Access boundaries | Tenant / group / owner filtering before retrieval; citation access checked again when opened. |
-| Retrieval | Keyword and lexical hash-vector baselines; optional PostgreSQL / pgvector and RRF hybrid retrieval. |
-| Workflows | Bounded tool execution, durable checkpoints, leases and version / permission revalidation on resume. |
-| Model adapters | Optional real-model planning, answer synthesis and semantic embeddings; billable calls are opt-in. |
-| Evaluation | Fixed synthetic questions, retrieval / refusal / citation metrics, and downloadable CI reports. |
-| Observability | Local run metadata and optional request-level Langfuse tracing. |
-
-Current source version: **v3.4**. The dataset contains **24 synthetic documents**. This is a learning project, not a production enterprise deployment.
-
-## Quick start
-
-Use **Python 3.12** from the repository root. Start with the offline SQLite route; it needs no model key or external database.
-
-```sh
+```powershell
 python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.lock
+.\.venv\Scripts\python.exe run_server.py --port 8006
 ```
 
-Activate the environment for your shell:
+macOS / Linux 将 Python 路径换成 `.venv/bin/python`。打开 http://127.0.0.1:8006 ，从本机生成的 `data/demo_auth.json` 取租户 demo 下 alice 的 token，填入页面并点击“载入我的会话和资料”。
 
-| Shell | Command |
-| :--- | :--- |
-| Windows PowerShell | `.\.venv\Scripts\Activate.ps1` |
-| macOS / Linux | `source .venv/bin/activate` |
+默认无须模型 Key、Docker、PostgreSQL 或云平台账号。凭证、数据库、虚拟环境与模型权重均不包含在源码 ZIP 中。
+
+**展示入口：[六分钟演示路线](docs/SHOWCASE.md)**。也可以执行一条离线演示命令：
 
 ```sh
-python -m pip install -r requirements.lock
-python run_server.py --port 8006
+python demo_walkthrough.py --out reports/my-showcase.json
 ```
 
-Open **http://127.0.0.1:8006**. Initialization creates synthetic data and a private `data/demo_auth.json`. Copy the token for `alice` in tenant `demo` into the page's **访问凭证** field; keep this file local.
+脚本使用临时合成数据库，运行纠错、章节上下文、澄清和清理案例，不修改你的日常资料，也不调用外部模型。
 
-Select **关键词基线**, ask a question, then click a citation to inspect its source. Follow the [step-by-step demo](docs/DEMO.md) to compare users and try the workflow / ticket route.
+## 这个项目能说明什么
 
-The app does not automatically load a root `.env` file. Use the supported environment variables or private configuration described in the mode guides. Do not put credentials in source files.
-
-## Architecture
+|概念|实际实现|
+|---|---|
+|大模型|可选的真实模型 API；默认回答抽取原文，默认 Agent 使用脚本路由|
+|RAG|文档 → 分块 → 检索 → 证据检查 → 回答与引用|
+|Agent|在限定工具中选择知识搜索或工单查询；启用真实规划时由模型选择|
+|LangChain|真实使用 Document、BaseRetriever、StructuredTool、可选 ChatOpenAI|
+|LangGraph|规划与工具流程，以及“检索不足 → 改写 → 最多重试一次”的条件图|
+|BM25 / 向量 / 混合|BM25、哈希词项向量对照、可选 pgvector、RRF 融合、可选神经重排|
+|评测与观测|Recall@1、Hit@1、Recall@4、MRR@4、拒答及引用指标；可选 Langfuse|
+|企业场景意识|检索前权限过滤、引用复查、资料更新、恢复校验和用户数据范围|
 
 ```mermaid
 flowchart TD
-    U[Browser request] --> A[Server-side identity]
-    A --> W[Question or bounded tool workflow]
-    W --> F[Authoritative access filtering]
-    F --> K[Keyword retrieval]
-    F --> V[Optional pgvector retrieval]
-    K --> R[Ranking or RRF fusion]
-    V --> R
-    R --> G[Extractive or optional model answer]
-    G --> C[Recheck versions and citation access]
-    C --> O[Answer with source links]
-    O --> X[Opening a source checks access again]
-    W <--> P[Scoped leased checkpoints]
+  Q[用户问题] --> A[服务器身份与资料权限]
+  A --> R[检索]
+  R --> E{证据是否可用}
+  E -->|足够| C[补充同章节上下文]
+  E -->|不足且可改写| W[小型词典改写一次]
+  W --> R2{再次检索后证据是否可用}
+  R2 -->|足够| C
+  R2 -->|不足| F[拒答或澄清]
+  E -->|没有有用改写| F
+  C --> G[原文抽取或可选模型生成]
+  G --> O[回答与引用]
 ```
 
-The server determines identity and permissions. Questions, retrieved text and model output do not grant access. Checkpoints preserve progress; they are not an authority for document access. See [the design and data dictionary](docs/DESIGN.md) for storage, revocation and tracing boundaries.
+图示的“再次检查”会依据结果选择回答或拒答。权限或服务异常直接返回错误，不以重试绕过。
 
-## Runtime modes
+## v4.2 的四个展示重点
 
-| Mode | Requirements | What to expect |
-| :--- | :--- | :--- |
-| **Offline default** | Python + SQLite | Keyword / hash-vector retrieval, extractive answers and scripted single-step routing. No paid API calls. |
-| **Real planning / synthesis** | Provider configuration; `--real` | Native model tool planning and model answers. Paid requests may occur; semantic retrieval is not enabled automatically. |
-| **PostgreSQL / pgvector** | Your PostgreSQL configuration and a built index | Database-backed storage and vector / hybrid routes. A hash-vector index alone is not semantic embedding. |
-| **Semantic retrieval** | PostgreSQL, embedding configuration, request budget and explicit index build; `--semantic` | Real embedding queries and optional RRF fusion. Indexing and queries may be billable. |
-| **Tracing** | Explicit Langfuse configuration | Request-level traces; not a full distributed tracing or production monitoring claim. |
+### 1. 纠错检索与澄清
 
-Read the [semantic guide](docs/真实Embedding升级与测试.md), [real-agent guide](docs/真实Agent升级与启动.md), and [hybrid guide](docs/混合检索升级与测试.md) before opting in. Some historical helper scripts contain original machine paths; adapt private configuration to your machine rather than running those helpers unchanged.
+- 输入“报账”：首次不足时，使用明确的小型词典改写为“报销”，最多再检索一次。
+- 词典在 `rag_app/query_rewrite.py`，当前包含报账、入司、休假等少量别名；这是可解释的查询处理，不需要训练模型。
+- 没有有用改写时不重复发送同一请求。页面可展开查看实际检索过程。
+- 先问“差旅报销和入职材料分别有什么要求？”，再问“那具体呢？”：系统请你选择主题，不猜测指代。
+- 所有候选和澄清选项都来自当前仍可访问的资料。
 
-## Checks and evaluation
+### 2. 章节分块与上下文
+
+上传 `data/showcase/section-policy.md` 观察章节与原始行号。Markdown 标题、Word Heading 样式会形成章节；无标题文本仍按行切分，PDF 保留页码。
+
+先检索小片段，再补充同文档、同版本、同章节内已授权的相邻片段。扩展只在数量/字符预算允许时增加内容，不跨章节拼接。原始检索排名与实际上下文分开记录，引用始终指向可打开的片段。
+
+已有数据库中的文档不会自动重分块；使用新解压目录，或以新版本重新上传资料即可演示新分块方式。它没有通用版面识别或 OCR 功能。
+
+### 3. 评测回归门禁
 
 ```sh
 python -m unittest discover -s tests -v
-python evaluate.py --split dev --out reports/local-dev.json
+python evaluate.py --split dev --out reports/my-dev.json
+python check_evaluation.py --report reports/my-dev.json --out reports/my-gate.json
 ```
 
-Choose a fresh `--out` path: the evaluator refuses to overwrite an existing report. It writes **JSON details and a same-name Markdown summary**.
+`evaluation_gate.json` 定义数据集/题数、指标阈值和相对 v4.1 的允许变化。指标缺失、NaN、权限泄漏计数非零或指标超出阈值时，门禁以非零状态退出。CI 默认运行离线测试、评测和门禁；PostgreSQL 集成测试可在手动运行工作流时选择。
 
-The [GitHub workflow](.github/workflows/tests.yml) runs tests with a pgvector service, then evaluates the **offline keyword and hash-vector dev baselines**. In the workflow run, open **Artifacts → offline-dev-evaluation-…** to download `ci-dev.json` and `ci-dev.md`; the Markdown also appears in the job summary when generated. Artifacts are retained for 14 days.
+固定集包含 24 篇合成文档、60 道问题，dev/test 各 30 道。默认只评测 dev，最终 test 仍需 `--allow-test`。本次结果见 `reports/v4.2-dev.md`、`v4.2-gate.json`。纠错和澄清等案例单独记录在 `v4.2-showcase.json`，不混入固定集准确率。
 
-The evaluation artifact records the dataset hash, method, metrics and per-question results. It is **not** a real-model, semantic-embedding or pgvector quality benchmark, even though the preceding test job uses PostgreSQL. See [how to read the report](docs/DEMO.md#read-the-evaluation-report).
+多文档题首位命中一篇时，Recall@1 可能是 0.5，而 Hit@1 为 1。逐字引用检查只验证摘录存在；这些指标不能替代人工理解和语义评分。
 
-Historical files under `reports/` are dated evidence, not fresh CI results. Check the actual workflow conclusion and its source commit before citing a result.
+### 4. 数据导出、保留与清理
 
-## Limits
+页面“数据管理”支持导出自己的可访问记录、按天数预览清理、确认执行。可选清理自己拥有的非活跃资料旧版本，默认保留最新 2 个版本。
 
-- Lexical retrieval is not BM25; no reranker is claimed.
-- A small synthetic dataset does not establish production accuracy, enterprise scale or general security.
-- Exact-quote support checks do not establish semantic relevance or answer completeness.
-- Local demo credentials are not production SSO; checkpoints and databases need host-level protection.
-- Real-model checks can cost money and are not part of the default offline evaluation.
+- 保留近期仍有对话活动的会话，避免仅依据创建时间误删。
+- 按用户与租户隔离；保留活跃资料、访问凭证、未结束任务、活跃工作流租约、预算和审计元数据。
+- “清理全部个人记录”可清理已结束的工作流状态；检查点缺少创建时间，因此按天清理不猜测其年龄。
+- 清理为逻辑删除数据库记录。停止运行中的请求后操作；旧备份、已下载文件和兼容外部 PGIndex 的旧副本不在该清理范围。
 
-Detailed boundaries: [design](docs/DESIGN.md), [2026-10-01 engineering notes](docs/UPGRADE_20261001.md), [2026-10-02 verification notes](docs/UPGRADE_20261002.md).
+命令行默认只预览，显式 `--apply` 才删除。先在本机环境中设置有效的 `RAG_EVAL_TOKEN`：
 
-## Code map
+```sh
+python cleanup_data.py --env-file .env --days 30
+python cleanup_data.py --env-file .env --days 30 --apply
+```
 
-| Path | Responsibility |
-| :--- | :--- |
-| `rag_app/api.py`, `security.py` | HTTP entry points, identity and access checks |
-| `retrieval.py`, `hybrid.py`, `pg_native_index.py` | Ranking, RRF fusion and the native vector index |
-| `workflow.py`, `checkpoint.py` | Tool workflow and durable recovery |
-| `planner.py`, `generation.py`, `synthesis.py`, `embedding.py` | Optional model adapters |
-| `data/synthetic/`, `data/questions.json` | Fictional documents and evaluation questions |
-| `tests/`, `evaluate.py` | Regression checks and fixed-set evaluation |
+可选 `--all-personal-records`、`--prune-document-versions --keep-versions 2`。不要把真实 token 写进源码。
 
-Paths in the first four rows are inside `rag_app/`.
+## 保留的 v4.1 能力
 
-## Development and provenance
+- PDF、DOCX、Markdown、TXT 上传，默认个人可见；去重、乐观版本更新、撤销和原生 pgvector 增量索引。
+- 多轮 RAG、引用打开、反馈标注、已确认反馈集再评测。
+- Dify 完整问答/外部知识 API、Coze 完整问答/纯检索 API，平台身份与用户身份分开校验。
+- 可选真实 Embedding、CrossEncoder/HTTP 重排、模型证据检查、Langfuse 分步观测。
+- 应用层租约检查点、只读工具范围与调用预算。
 
-This project was developed with AI assistance. [Source history](docs/SOURCE_HISTORY.md) explains the imported snapshots and original records; commits are not backdated. The `snapshot/v1` through `snapshot/v3.4` tags and `archive/*` branches preserve earlier work. See [historical notes](README.legacy.md) and [contribution guidance](CONTRIBUTING.md).
+更多端点和操作说明：[v4.1 验证记录](reports/v4.1-validation.md)、[Dify 接入](integrations/dify/WORKFLOW.md)、[Coze 接入](integrations/coze/WORKFLOW.md)。
 
-Use synthetic examples in issues and pull requests. Do not upload tokens, provider keys, private documents or generated databases.
+## 可选配置
+
+复制 `.env.example` 为 `.env` 并填写需要的项目，然后显式加载：
+
+```sh
+python run_server.py --env-file .env --port 8006
+```
+
+|配置|效果|
+|---|---|
+|`RAG_CORRECTIVE=on`|启用有界别名纠错，默认开启|
+|`RAG_SECTION_CONTEXT=on`|补充同章节上下文，默认开启|
+|`RAG_MODEL_URL/KEY/NAME` + `--real`|LangChain 模型规划与证据综合，可产生 API 费用|
+|`RAG_EVIDENCE_MODE=model` + 持久预算配置|模型证据充分性及 Agent 综合答案支持度检查|
+|`RAG_RERANKER=cross-encoder`|本地神经重排；另装 requirements-ml.txt 并准备模型权重|
+|`RAG_RERANKER=http`|调用兼容 /rerank 协议的服务，需重排 Key 和预算|
+|`RAG_TRACING=langfuse`|配置三项 LANGFUSE_* 后发送阶段元数据|
+|`RAG_PLATFORM_AUTH_FILE`|启用本机私有的 Dify/Coze 平台凭证映射|
+
+`--real` 不会自动打开付费 Embedding。启用真实向量检索时，在环境中设置 PostgreSQL、Embedding 的端点/Key/模型/维度及预算，先构建再运行：
+
+```sh
+python sync_pg.py --env-file .env --real
+python run_server.py --env-file .env --semantic --port 8006
+```
+
+本机已有 Docker 时可用 `compose.pg.yaml` 准备演示数据库。真实服务可用性探测：
+
+```sh
+python verify_services.py --env-file .env --allow-external --strict --out reports/my-services.json
+```
+
+缺少配置记录为 not_configured；HTTP 协议测试通过与真实模型效果、平台账号联调分别记录。本轮没有新增外部服务验证要求。
+
+## 主要代码与阅读顺序
+
+1. `rag_app/service.py`：RAG 主流程与检索/上下文分离。
+2. `rag_app/langchain_components.py`：框架组件适配和服务器身份绑定。
+3. `rag_app/workflow.py`、`corrective.py`：Agent 图与有限纠错图。
+4. `rag_app/sections.py`、`evidence_policy.py`：章节上下文及证据判断。
+5. `rag_app/conversation.py`、`retention.py`：指代澄清和用户记录管理。
+6. `evaluate.py`、`check_evaluation.py`：指标、基线和回归门禁。
+
+项目由 AI 协助开发；上游版本和本次定位见 `SOURCE_BASELINE.json`，原始来源说明在 `docs/SOURCE_HISTORY.md`。历史 reports 按版本保留。当前代码使用应用层检查点桥接；LangGraph 原生 Saver、复杂 OCR、多 Agent 协作和分布式部署没有纳入本次范围。
+
+重新打包源码：
+
+```sh
+python package_source.py --out dist/enterprise-rag-agent-v4.2-source.zip
+```

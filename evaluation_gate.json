@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "split": "dev",
+  "dataset_sha256": "c37c41880762a6d6188d576642f76a3c09c4a6c00c11f92e7dd15120dbd4fbf9",
+  "question_count": 30,
+  "baseline_report": "reports/v4.1-dev.json",
+  "methods": ["bm25", "hybrid-local"],
+  "minimum": {"recall_at_1_macro": 0.80, "recall_at_4_macro": 0.95, "correct_refusal_rate": 0.95, "quote_support_rate": 1.0},
+  "maximum": {"false_refusal_rate": 0.10},
+  "baseline_tolerance": {"recall_at_1_drop": 0.025, "recall_at_4_drop": 0.0, "correct_refusal_drop": 0.0, "false_refusal_increase": 0.05},
+  "note": "Small synthetic dev regression guard, not an enterprise SLA or a semantic correctness guarantee. Freeze a separate test split before final evaluation."
+}

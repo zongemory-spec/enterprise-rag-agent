@@ -7,10 +7,15 @@ from init_demo import main
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--real",action="store_true",help="Explicitly enable billable model calls")
+    parser.add_argument('--env-file',help='Explicitly load a local environment file')
     parser.add_argument('--semantic',action='store_true',help='Enable paid embedding queries; build the index explicitly first')
     parser.add_argument("--host",default="127.0.0.1")
     parser.add_argument("--port",type=int,default=8003)
     args=parser.parse_args()
+    if args.env_file:
+        from dotenv import load_dotenv
+        if not os.path.isfile(args.env_file):parser.error('Environment file not found')
+        load_dotenv(args.env_file,override=False)
     configure_runtime(real=args.real,semantic=args.semantic)
     main()
     if os.getenv("RAG_STORE")=="postgresql" and not args.real and not args.semantic:
