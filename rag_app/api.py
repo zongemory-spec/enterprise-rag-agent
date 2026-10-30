@@ -16,13 +16,14 @@ from rag_app.service import Service
 class Question(BaseModel):
     model_config=ConfigDict(extra="forbid",strict=True)
     query:str=Field(min_length=1,max_length=2000)
-    method:Literal["keyword","hash-vector","pgvector","hybrid"]="keyword"
+    method:Literal["keyword","hash-vector","bm25","pgvector","hybrid","hybrid-local"]="bm25"
     top_k:int=Field(default=4,ge=1,le=8)
+    rerank:bool=False
 
 class AgentQuestion(Question):
     workflow_id:str | None=Field(default=None,min_length=1,max_length=64,pattern=r"^[A-Za-z0-9_-]+$")
 
-def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,synthesizer=None):
+def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,synthesizer=None,reranker=None,evidence_policy=None,platform_auth=None):
     from rag_app.settings import open_store
     store=store or open_store()
     auth=auth or Registry.from_file(os.getenv("RAG_AUTH_FILE","data/demo_auth.json"))
@@ -33,10 +34,13 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
     chat_guard=persistent_budget or budget
     if os.getenv("RAG_GENERATOR","extractive")=="real" and generator is None:
         from rag_app.generation import HTTPQuoteGenerator
-        generator=HTTPQuoteGenerator(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"])
-    if os.getenv("RAG_PLANNER","offline")=="real" and planner is None:
-        from rag_app.planner import HTTPPlanner
-        planner=HTTPPlanner(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],chat_guard)
+        generator=HTTPQuoteGenerator(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],chat_guard)
+    if os.getenv("RAG_PLANNER","offline") in ('real','langchain') and planner is None:
+        if os.getenv('RAG_PLANNER')=='langchain':
+            from rag_app.langchain_planner import LangChainPlanner as Planner
+        else:
+            from rag_app.planner import HTTPPlanner as Planner
+        planner=Planner(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],chat_guard)
     if os.getenv("RAG_SYNTHESIS")=="real" and synthesizer is None:
         synthesizer=HTTPAnswerSynthesizer(os.environ["RAG_MODEL_URL"],os.environ["RAG_MODEL_KEY"],os.environ["RAG_MODEL_NAME"],chat_guard)
     if os.getenv("RAG_PG_DSN") and pg_index is None:
@@ -51,13 +55,22 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
             pg_index=NativePGIndex(store,embedder)
         else:
             pg_index=PGIndex(os.environ["RAG_PG_DSN"],embedder)
-    service=Service(store,generator,pg_index)
+    from rag_app.reranking import configured_reranker
+    if reranker is None:reranker=configured_reranker(persistent_budget)
+    from rag_app.evidence_policy import configured_evidence_policy
+    service=Service(store,generator,pg_index,reranker,evidence_policy or configured_evidence_policy(persistent_budget))
+    from rag_app.application_state import ApplicationState
+    from rag_app.document_management import Documents
+    from rag_app.conversation import Conversations
+    state=ApplicationState(store)
+    documents=Documents(store,state,pg_index)
+    conversations=Conversations(service,state)
     from rag_app.checkpoint import Checkpointer
     from rag_app.tracing import configured_tracer
     checkpoints=Checkpointer(os.getenv("RAG_CHECKPOINT_DB","data/checkpoints.sqlite3"),
                              store if getattr(store,"backend",None)=="postgresql" else None)
     tracer=configured_tracer()
-    app=FastAPI(title="企业知识问答原型")
+    app=FastAPI(title="企业知识助手",version="4.2.0")
     audit_logger=logging.getLogger("rag.audit")
     audit_logger.setLevel(logging.INFO)
     audit_logger.propagate=False
@@ -67,15 +80,27 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
         audit_logger.addHandler(handler)
     app.state.service=service
     app.state.tracer=tracer
+    app.state.documents=documents
+    app.state.application_state=state
+    app.state.conversations=conversations
+    from rag_app.retention import Retention
+    app.state.retention=Retention(state,checkpoints)
+    from rag_app.upload_limit import UploadLimitMiddleware
+    app.add_middleware(UploadLimitMiddleware)
 
     @app.middleware("http")
     async def audit(request,call_next):
         start=time.perf_counter()
         request.state.request_id=uuid4().hex
         request.state.reason="completed"
-        try:r=await call_next(request)
-        except Exception:
-            request.state.reason="internal_error";r=JSONResponse({"detail":"internal_error"},status_code=500)
+        from rag_app.tracing import trace_scope,span
+        with trace_scope(tracer is not None) as batch:
+            with span('http.request') as meta:
+                try:r=await call_next(request)
+                except Exception:
+                    request.state.reason="internal_error";r=JSONResponse({"detail":"internal_error"},status_code=500)
+                meta['status']=r.status_code
+                if r.status_code>=400 and request.state.reason=='completed':request.state.reason='request_failed'
         store.audit(request.state.request_id,r.status_code,request.state.reason)
         audit_logger.info(json.dumps({"request_id":request.state.request_id,"status":r.status_code,"reason":request.state.reason}))
         r.headers["X-Request-ID"]=request.state.request_id
@@ -83,7 +108,8 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
             # Use route templates: arbitrary user paths and parameters are not exported.
             route=getattr(request.scope.get("route"),"path","unmatched")
             import asyncio
-            await asyncio.to_thread(tracer.record,route,(time.perf_counter()-start)*1000,r.status_code)
+            batch.spans[-1]['name']=route
+            await asyncio.to_thread(tracer.export,batch)
         return r
 
     @app.exception_handler(AccessError)
@@ -103,19 +129,21 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
     def health():return {"status":"ok"}
 
     @app.get("/capabilities")
-    def capabilities():return {"planner":"real" if planner else "offline-script","synthesis":getattr(synthesizer,"model","offline-extractive"),"chat_attempt_limit":budget.limit,"chat_attempts_used":budget.used,"tool_call_limit":3,'vector_index':pg_index.status() if hasattr(pg_index,'status') else None,'persistent_budget':persistent_budget.status() if persistent_budget else None}
+    def capabilities():return {"version":"4.2.0","features":["corrective-retrieval","section-context","evaluation-gate","personal-cleanup","evidence-check","uploads","incremental-pgvector","conversations","feedback","dify","coze"],"orchestrator":"langgraph","retriever_framework":"langchain","methods":["keyword","hash-vector","bm25","hybrid-local","pgvector","hybrid"],"reranker":getattr(reranker,'model_id',None),"planner":"real" if planner else "offline-script","synthesis":getattr(synthesizer,"model","offline-extractive"),"chat_attempt_limit":budget.limit,"chat_attempts_used":budget.used,"tool_call_limit":3,'vector_index':pg_index.status() if hasattr(pg_index,'status') else None,'persistent_budget':persistent_budget.status() if persistent_budget else None}
 
     @app.get("/",response_class=HTMLResponse)
     def ui():return Path(__file__).with_name("ui.html").read_text(encoding="utf-8-sig")
 
     @app.post("/ask")
     def ask(body:Question,ctx=Depends(authenticated)):
-        return service.ask(body.query,ctx,body.method,body.top_k)
+        result=service.ask(body.query,ctx,body.method,body.top_k,rerank=body.rerank)
+        state.record_answer(ctx,body.query,result)
+        return result
 
     @app.post("/agent")
     def agent(body:AgentQuestion,ctx=Depends(authenticated)):
         from rag_app.workflow import execute
-        return execute(service,checkpoints,body.query,ctx,planner,body.method,body.workflow_id,synthesizer)
+        return execute(service,checkpoints,body.query,ctx,planner,body.method,body.workflow_id,synthesizer,body.top_k,body.rerank)
 
     @app.get("/citations/{chunk_id}")
     def citation(chunk_id:str,ctx=Depends(authenticated)):
@@ -125,5 +153,9 @@ def create_app(store=None,auth=None,generator=None,pg_index=None,planner=None,sy
     @app.get("/runs/{run_id}")
     def run(run_id:str,ctx=Depends(authenticated)):
         return store.run(run_id,ctx)
+    from rag_app.extended_api import install_extended_routes
+    install_extended_routes(app,service,state,documents,conversations,authenticated)
+    from rag_app.platforms import PlatformRegistry,install_platform_routes
+    install_platform_routes(app,service,state,conversations,auth,platform_auth or PlatformRegistry.configured())
     return app
 

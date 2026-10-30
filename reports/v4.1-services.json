@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-10-29T08:03:37.242585+00:00",
+  "results": [
+    {
+      "service": "postgres",
+      "status": "not_configured",
+      "details": {}
+    },
+    {
+      "service": "embedding",
+      "status": "not_configured",
+      "details": {}
+    },
+    {
+      "service": "rerank",
+      "status": "not_configured",
+      "details": {}
+    },
+    {
+      "service": "model",
+      "status": "not_configured",
+      "details": {}
+    },
+    {
+      "service": "langfuse",
+      "status": "not_configured",
+      "details": {}
+    },
+    {
+      "service": "dify",
+      "status": "not_configured",
+      "details": {}
+    },
+    {
+      "service": "coze",
+      "status": "not_configured",
+      "details": {}
+    }
+  ],
+  "summary": {
+    "verified": 0,
+    "failed": 0,
+    "not_configured": 7,
+    "external_opt_in_required": 0
+  },
+  "scope": "Live protocols and service availability; this is not a model-quality or production-load benchmark."
+}

@@ -1,13 +1,52 @@
-name: offline-and-pgvector
+name: personal-demo-checks
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      postgres:
+        description: Also run optional PostgreSQL integration tests
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
-  test:
+  offline-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.lock
+      - run: python -m unittest discover -s tests -v
+      - name: Evaluate synthetic dev set
+        run: python evaluate.py --split dev --out reports/ci-dev.json
+      - name: Reject evaluation regressions
+        run: python check_evaluation.py --report reports/ci-dev.json --out reports/ci-gate.json
+      - name: Show evaluation summary
+        if: always()
+        shell: bash
+        run: |
+          if test -f reports/ci-dev.md; then
+            cat reports/ci-dev.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if test -f reports/ci-gate.json; then
+            cat reports/ci-gate.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: demo-evaluation-${{ github.sha }}
+          path: |
+            reports/ci-dev.json
+            reports/ci-dev.md
+            reports/ci-gate.json
+          retention-days: 14
+  optional-postgres:
+    if: github.event_name == 'workflow_dispatch' && inputs.postgres
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -16,8 +55,7 @@ jobs:
           POSTGRES_USER: rag
           POSTGRES_PASSWORD: local-demo-only
           POSTGRES_DB: rag
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U rag" --health-interval 5s
           --health-timeout 5s --health-retries 10
@@ -27,26 +65,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
       - run: pip install -r requirements.lock
       - run: python -m unittest discover -s tests -v
-      - name: Evaluate offline dev baselines
-        run: python evaluate.py --split dev --out reports/ci-dev.json
-      - name: Add evaluation to job summary
-        if: always()
-        shell: bash
-        run: |
-          if test -f reports/ci-dev.md; then
-            cat reports/ci-dev.md >> "$GITHUB_STEP_SUMMARY"
-          fi
-      - name: Upload synthetic evaluation reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: offline-dev-evaluation-${{ github.sha }}
-          path: |
-            reports/ci-dev.json
-            reports/ci-dev.md
-          if-no-files-found: warn
-          retention-days: 14
-

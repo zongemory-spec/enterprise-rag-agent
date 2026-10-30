@@ -7,7 +7,11 @@ from rag_app.security import AccessError
 class PersistentBudget:
     def __init__(self,path,limits=None):
         self.path=Path(path);self.path.parent.mkdir(parents=True,exist_ok=True)
-        self.limits=limits or {'embedding':12,'chat':4}
+        if limits is None:
+            import os
+            limits={kind:int(os.getenv('RAG_'+kind.upper()+'_ATTEMPT_LIMIT',str(default)))
+                    for kind,default in [('embedding',12),('chat',9),('rerank',30),('evidence',30)]}
+        self.limits=limits
         with self.connect() as c:c.execute('CREATE TABLE IF NOT EXISTS attempts(kind TEXT PRIMARY KEY,used INTEGER NOT NULL)')
     @contextmanager
     def connect(self):

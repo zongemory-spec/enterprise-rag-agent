@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-10-29T08:07:47.078798+00:00",
+  "results": [
+    {
+      "service": "app",
+      "status": "verified",
+      "details": {
+        "check": "authenticated_ask_contract",
+        "refused": false
+      }
+    }
+  ],
+  "summary": {
+    "verified": 1,
+    "failed": 0,
+    "not_configured": 0,
+    "external_opt_in_required": 0
+  },
+  "scope": "Live protocols and service availability; this is not a model-quality or production-load benchmark."
+}

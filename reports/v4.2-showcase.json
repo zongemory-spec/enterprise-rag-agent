@@ -1,0 +1,49 @@
+{
+  "kind": "offline-showcase-scenarios",
+  "version": "4.2",
+  "scenarios": {
+    "corrective_retrieval": {
+      "passed": true,
+      "queries": [
+        "报账",
+        "报销"
+      ],
+      "attempts": 2
+    },
+    "parent_section_context": {
+      "passed": true,
+      "retrieved_children": 1,
+      "context_chunks": 6,
+      "added_siblings": 5
+    },
+    "clarification": {
+      "passed": true,
+      "choices": [
+        "入职材料",
+        "差旅报销"
+      ]
+    },
+    "personal_cleanup": {
+      "passed": true,
+      "preview": {
+        "conversations": 1,
+        "answers": 2,
+        "feedback": 0,
+        "completed_jobs": 0,
+        "runs": 3,
+        "inactive_document_versions": 0,
+        "active_jobs_kept": 0
+      },
+      "applied": {
+        "conversations": 1,
+        "answers": 2,
+        "feedback": 0,
+        "completed_jobs": 0,
+        "runs": 3,
+        "inactive_document_versions": 0,
+        "active_jobs_kept": 0
+      }
+    }
+  },
+  "note": "Feature demonstrations over disposable synthetic data; not a model-quality benchmark. No external API calls."
+}

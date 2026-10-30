@@ -8,10 +8,21 @@ class ExtractiveGenerator:
     def generate(self,query,chunks):
         claims=[]
         for c in chunks:
+            found=False
             for line in c["text"].splitlines():
                 if line.startswith("事实："):
                     claims.append({"chunk_id":c["chunk_id"],"quote":line})
+                    found=True
                     break
+            if not found:
+                import re
+                from rag_app.evidence_policy import coverage
+                excerpts=[s.strip() for s in re.split(r'(?<=[。！？.!?])|\n',c['text'])
+                          if s.strip() and not s.lstrip().startswith('#')]
+                excerpts=[s for s in excerpts if len(s)<=1500 and coverage(query,s)>.1]
+                if excerpts:
+                    quote=max(excerpts,key=lambda s:coverage(query,s))
+                    claims.append({'chunk_id':c['chunk_id'],'quote':quote})
         return {"claims":claims,"usage":None,"cost":0.0,"currency":None}
 
 class HTTPQuoteGenerator:

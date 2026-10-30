@@ -14,14 +14,22 @@ class NativePGIndex:
     def sync(self,store=None):
         store=store or self.store
         generation,rows=store.snapshot_all()
-        vectors=self.vectors([r["title"]+" "+r["text"] for r in rows])
-        if len(vectors)!=len(rows):raise ValueError("Embedding count mismatch")
+        with store.connect() as c:
+            existing={r['chunk_id'] for r in c.execute('SELECT chunk_id FROM embeddings WHERE model_id=%s',(self.model_id,)).fetchall()}
+        missing=[r for r in rows if r['chunk_id'] not in existing]
+        vectors=self.vectors([r["title"]+" "+r["text"] for r in missing]) if missing else []
+        if len(vectors)!=len(missing):raise ValueError("Embedding count mismatch")
         with store.connect() as c:
             c.execute("SELECT pg_advisory_xact_lock(hashtext(current_schema()),27183)")
             if c.execute("SELECT value FROM metadata WHERE key='index_version'").fetchone()["value"]!=generation:raise AccessError("index_changed_retry",409)
-            c.execute("DELETE FROM embeddings WHERE model_id=%s",(self.model_id,))
-            for row,v in zip(rows,vectors):c.execute("INSERT INTO embeddings VALUES (%s,%s,%s,%s::vector)",(row["chunk_id"],self.model_id,generation,json.dumps(v)))
-        return len(rows)
+            removed=c.execute('''DELETE FROM embeddings e WHERE model_id=%s AND NOT EXISTS (
+                SELECT 1 FROM chunks c JOIN documents d USING(document_id,version)
+                WHERE c.chunk_id=e.chunk_id AND d.active=1)''',(self.model_id,)).rowcount
+            for row,v in zip(missing,vectors):c.execute("INSERT INTO embeddings VALUES (%s,%s,%s,%s::vector) ON CONFLICT(chunk_id,model_id) DO NOTHING",(row["chunk_id"],self.model_id,generation,json.dumps(v)))
+            c.execute('UPDATE embeddings SET generation=%s WHERE model_id=%s',(generation,self.model_id))
+        self.last_sync={'mode':'incremental','embedded_chunks':len(missing),'retained_chunks':len(rows)-len(missing),
+                        'removed_chunks':removed,'index_version':generation}
+        return len(missing)
     def status(self):
         generation=self.store.index_version
         with self.store.connect() as c:

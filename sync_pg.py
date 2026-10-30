@@ -6,7 +6,12 @@ from init_demo import populate
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--real",action="store_true",help="Enable billable semantic embedding requests")
+    parser.add_argument('--env-file',help='Explicitly load a local environment file')
     args=parser.parse_args()
+    if args.env_file:
+        from dotenv import load_dotenv
+        if not os.path.isfile(args.env_file):parser.error('Environment file not found')
+        load_dotenv(args.env_file,override=False)
     configure_runtime(semantic=args.real)
     store=open_store()
     if store.backend!="postgresql":raise SystemExit("Configure PostgreSQL first")

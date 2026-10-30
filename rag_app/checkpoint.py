@@ -59,3 +59,11 @@ class Checkpointer:
                                     actor.tenant_id, actor.user_id, workflow, lease, time.time()))
             if updated.rowcount != 1:
                 raise AccessError("workflow_lease_lost", 409)
+
+    def clear_inactive(self,actor,dry_run=True):
+        with self.connect() as c:
+            scope=(actor.tenant_id,actor.user_id,time.time())
+            rows=self.execute(c,'SELECT workflow,expires FROM workflow_checkpoints WHERE tenant=? AND actor=?',scope[:2]).fetchall()
+            selected=sum(r['expires']<=scope[2] for r in rows)
+            if not dry_run:self.execute(c,'DELETE FROM workflow_checkpoints WHERE tenant=? AND actor=? AND expires<=?',scope)
+        return {'deleted_or_selected':selected,'active_kept':len(rows)-selected}
